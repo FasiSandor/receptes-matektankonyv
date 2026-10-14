@@ -1,0 +1,685 @@
+"use client";
+
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
+import {
+  createLibraryVideoUrl,
+  deleteLibraryItem,
+  getLibraryKey,
+  LibraryItem,
+  LibraryStatus,
+  listLibraryItems,
+  setLibraryKey,
+  updateLibraryItem,
+} from "../library";
+import styles from "./Collection.module.css";
+
+type Filter = "all" | "favorite" | "competition" | "to_try" | "tested";
+
+const filterLabels: { key: Filter; label: string; icon: string }[] = [
+  { key: "all", label: "Mind", icon: "☷" },
+  { key: "favorite", label: "Kedvenc", icon: "★" },
+  { key: "competition", label: "Versenyre", icon: "♜" },
+  { key: "to_try", label: "Kipróbálandó", icon: "◷" },
+  { key: "tested", label: "Kipróbált", icon: "✓" },
+];
+
+const statusLabels: Record<LibraryStatus, string> = {
+  saved: "Mentett",
+  to_try: "Kipróbálandó",
+  tested: "Kipróbált",
+};
+
+const groupOrder = [
+  "Előétel",
+  "Leves",
+  "Főétel",
+  "Tányérdesszert",
+  "Kiegészítő elem",
+  "Mártás/krém",
+  "Köret",
+  "Tészta/Pékáru",
+  "Ital",
+  "Egyéb",
+] as const;
+
+const groupShort: Record<string, string> = {
+  "Előétel": "E",
+  "Leves": "L",
+  "Főétel": "F",
+  "Tányérdesszert": "D",
+  "Kiegészítő elem": "K",
+  "Mártás/krém": "M",
+  "Köret": "Kö",
+  "Tészta/Pékáru": "T",
+  "Ital": "I",
+  "Egyéb": "·",
+};
+
+function groupId(group: string) {
+  return "group-" + group
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .toLowerCase();
+}
+
+function DetailList({ title, items }: { title: string; items?: string[] }) {
+  if (!items?.length) return null;
+  return (
+    <section className={styles.detailSection}>
+      <h4>{title}</h4>
+      <ul>{items.map((item, i) => <li key={i}>{item}</li>)}</ul>
+    </section>
+  );
+}
+
+function LibraryMedia({ item }: { item: LibraryItem }) {
+  const [videoUrl, setVideoUrl] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    if (!item.video_path) return;
+
+    void createLibraryVideoUrl(item.video_path).then((url) => {
+      if (active) setVideoUrl(url);
+    });
+
+    return () => { active = false; };
+  }, [item.video_path]);
+
+  if (item.video_path && videoUrl) {
+    return (
+      <video
+        className={styles.videoPreview}
+        src={videoUrl}
+        poster={item.thumbnail_url || undefined}
+        controls
+        playsInline
+        preload="metadata"
+      />
+    );
+  }
+
+  if (item.thumbnail_url) {
+    return <img className={styles.thumb} src={item.thumbnail_url} alt="" referrerPolicy="no-referrer" />;
+  }
+
+  return <div className={styles.thumbPlaceholder}>{item.video_path ? "…" : "M"}</div>;
+}
+
+
+export default function CollectionPage() {
+  const [items, setItems] = useState<LibraryItem[]>([]);
+  const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState<Filter>("all");
+  const [sourceFilter, setSourceFilter] = useState("all");
+  const [groupFilter, setGroupFilter] = useState("all");
+  const [ingredientFilter, setIngredientFilter] = useState("all");
+  const [contentFilter, setContentFilter] = useState("all");
+  const [sourceOpen, setSourceOpen] = useState(false);
+  const [catalogOpen, setCatalogOpen] = useState(false);
+  const [sourceQuery, setSourceQuery] = useState("");
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [message, setMessage] = useState("");
+  const [showTop, setShowTop] = useState(false);
+  const [quickOpen, setQuickOpen] = useState(false);
+  const [quickUrl, setQuickUrl] = useState("");
+
+  async function reload() {
+    try {
+      setLoading(true);
+      setItems(await listLibraryItems());
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "A gyűjtemény nem tölthető be.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => { void reload(); }, []);
+
+  useEffect(() => {
+    const onScroll = () => setShowTop(window.scrollY > 420);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  const sourcePages = useMemo(() => {
+    const map = new Map<string, { key: string; name: string; url: string; platform: string; count: number }>();
+    for (const item of items) {
+      const name = item.source_page_name || item.uploader || "";
+      const generic = /^(unknown|ismeretlen|chef)$/i.test(name.trim());
+      if (!name || (generic && !item.source_page_url)) continue;
+      const url = item.source_page_url || "";
+      const key = url || `${item.platform || "Forrás"}::${name}`;
+      const current = map.get(key);
+      if (current) current.count += 1;
+      else map.set(key, { key, name, url, platform: item.platform || "Forrás", count: 1 });
+    }
+    return Array.from(map.values()).sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, "hu"));
+  }, [items]);
+
+  const catalogFacets = useMemo(() => {
+    const ingredientCounts = new Map<string, number>();
+    const contentCounts = new Map<string, number>();
+    const groupCounts = new Map<string, number>();
+
+    for (const item of items) {
+      const group = item.recipe_group || "Egyéb";
+      groupCounts.set(group, (groupCounts.get(group) || 0) + 1);
+      for (const tag of item.ingredient_tags || []) {
+        ingredientCounts.set(tag, (ingredientCounts.get(tag) || 0) + 1);
+      }
+      for (const tag of item.content_tags || []) {
+        contentCounts.set(tag, (contentCounts.get(tag) || 0) + 1);
+      }
+    }
+
+    const sortCounts = (map: Map<string, number>) =>
+      Array.from(map.entries()).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "hu"));
+
+    return {
+      groups: groupOrder.filter((group) => groupCounts.has(group)).map((group) => [group, groupCounts.get(group)!] as const),
+      ingredients: sortCounts(ingredientCounts),
+      contents: sortCounts(contentCounts),
+    };
+  }, [items]);
+
+  const visible = useMemo(() => {
+    const needle = query.trim().toLocaleLowerCase("hu");
+    return items.filter((item) => {
+      if (sourceFilter !== "all") {
+        const itemKey = item.source_page_url || `${item.platform || "Forrás"}::${item.source_page_name || item.uploader || ""}`;
+        if (itemKey !== sourceFilter) return false;
+      }
+      if (groupFilter !== "all" && (item.recipe_group || "Egyéb") !== groupFilter) return false;
+      if (ingredientFilter !== "all" && !(item.ingredient_tags || []).includes(ingredientFilter)) return false;
+      if (contentFilter !== "all" && !(item.content_tags || []).includes(contentFilter)) return false;
+      if (filter === "favorite" && !item.favorite) return false;
+      if (filter === "competition" && !item.for_competition) return false;
+      if (filter === "to_try" && item.status !== "to_try") return false;
+      if (filter === "tested" && item.status !== "tested") return false;
+      if (!needle) return true;
+
+      const haystack = [
+        item.title,
+        item.uploader,
+        item.hungarian_summary,
+        item.note,
+        item.recipe_group || "",
+        ...(item.ingredient_tags || []),
+        ...(item.content_tags || []),
+        ...(item.tags || []),
+        ...(item.techniques || []),
+        ...(item.competition_ideas || []),
+      ].join(" ").toLocaleLowerCase("hu");
+      return haystack.includes(needle);
+    });
+  }, [items, query, filter, sourceFilter, groupFilter, ingredientFilter, contentFilter]);
+
+  const grouped = useMemo(() => {
+    const map = new Map<string, LibraryItem[]>();
+    for (const item of visible) {
+      const group = item.recipe_group || "Egyéb";
+      if (!map.has(group)) map.set(group, []);
+      map.get(group)!.push(item);
+    }
+
+    const known = groupOrder
+      .filter((group) => map.has(group))
+      .map((group) => ({ group, items: map.get(group)! }));
+
+    const extras = Array.from(map.entries())
+      .filter(([group]) => !groupOrder.includes(group as typeof groupOrder[number]))
+      .map(([group, groupItems]) => ({ group, items: groupItems }));
+
+    return [...known, ...extras];
+  }, [visible]);
+
+  async function patch(id: string, values: Parameters<typeof updateLibraryItem>[1]) {
+    try {
+      const updated = await updateLibraryItem(id, values);
+      setItems((current) => current.map((item) => item.id === id ? updated : item));
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "A módosítás nem sikerült.");
+    }
+  }
+
+  async function remove(item: LibraryItem) {
+    if (!confirm(`Törlöd a gyűjteményből?\n\n${item.title}`)) return;
+    try {
+      await deleteLibraryItem(item.id, item.video_path);
+      setItems((current) => current.filter((x) => x.id !== item.id));
+      if (expanded === item.id) setExpanded(null);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "A törlés nem sikerült.");
+    }
+  }
+
+  async function copyKey() {
+    const key = getLibraryKey();
+    await navigator.clipboard.writeText(key);
+    setMessage("A gyűjteménykulcs a vágólapra került. Ezt csak a saját eszközödre másold át.");
+  }
+
+  function importKey() {
+    const next = prompt("Illeszd be a másik eszköz MOTA Import gyűjteménykulcsát:");
+    if (!next) return;
+    try {
+      setLibraryKey(next);
+      location.reload();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "A kulcs nem használható.");
+    }
+  }
+
+  function jumpToGroup(group: string) {
+    document.getElementById(groupId(group))?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function submitQuickImport() {
+    const value = quickUrl.trim();
+    if (!/^https?:\/\//i.test(value)) {
+      setMessage("Illessz be egy érvényes Facebook, Instagram, TikTok vagy YouTube linket.");
+      return;
+    }
+    window.location.href = `/mota-import?url=${encodeURIComponent(value)}&quick=1`;
+  }
+
+  async function pasteQuickLink() {
+    try {
+      const value = await navigator.clipboard.readText();
+      if (value) setQuickUrl(value.trim());
+    } catch {
+      setMessage("A vágólap olvasását az iPhone most nem engedte. Illeszd be kézzel a linket.");
+    }
+  }
+
+  return (
+    <main className={styles.shell}>
+      <header className={styles.topbar}>
+        <Link href="/mota-import" className={styles.brand}>
+          <img src="/mota-import/icon-180.png" alt="" className={styles.brandIcon} />
+          <span className={styles.brandText}>
+            <strong>MOTA Import</strong>
+            <small>Gasztro videó-katalógus & tudástár</small>
+          </span>
+        </Link>
+        <Link href="/mota-import" className={styles.importLink}>
+          <span>＋</span>
+          <b>Új import</b>
+        </Link>
+      </header>
+
+      <section className={styles.hero}>
+        <span className={styles.kicker}>RENDSZEREZETT GASZTRO TUDÁSTÁR</span>
+        <h1>Gyűjtemény</h1>
+        <p>{items.length} mentett szakmai anyag · kereshető videók, receptek és technológiák</p>
+      </section>
+
+      <section className={styles.toolbar}>
+        <div className={styles.searchWrap}>
+          <span>⌕</span>
+          <input
+            className={styles.search}
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Keresés: hal, ropogós elem, csokoládé…"
+          />
+        </div>
+
+        <div className={styles.filters}>
+          {filterLabels.map((item) => (
+            <button
+              key={item.key}
+              type="button"
+              className={filter === item.key ? styles.filterActive : styles.filter}
+              onClick={() => setFilter(item.key)}
+            >
+              <span>{item.icon}</span>{item.label}
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <section className={styles.catalogTools}>
+        <button type="button" className={sourceFilter !== "all" ? styles.catalogToolActive : styles.catalogTool} onClick={() => setSourceOpen(true)}>
+          <span className={styles.catalogToolIcon}>◎</span>
+          <span><b>Források</b><small>{sourcePages.length} oldal / profil</small></span>
+          <i>›</i>
+        </button>
+        <button type="button" className={(groupFilter !== "all" || ingredientFilter !== "all" || contentFilter !== "all") ? styles.catalogToolActive : styles.catalogTool} onClick={() => setCatalogOpen(true)}>
+          <span className={styles.catalogToolIcon}>▦</span>
+          <span><b>Katalógus</b><small>Fogás · alapanyag · elem</small></span>
+          <i>›</i>
+        </button>
+      </section>
+
+      {(sourceFilter !== "all" || groupFilter !== "all" || ingredientFilter !== "all" || contentFilter !== "all") ? (
+        <div className={styles.activeFilters}>
+          {sourceFilter !== "all" ? <button type="button" onClick={() => setSourceFilter("all")}>Forrás ×</button> : null}
+          {groupFilter !== "all" ? <button type="button" onClick={() => setGroupFilter("all")}>{groupFilter} ×</button> : null}
+          {ingredientFilter !== "all" ? <button type="button" onClick={() => setIngredientFilter("all")}>{ingredientFilter} ×</button> : null}
+          {contentFilter !== "all" ? <button type="button" onClick={() => setContentFilter("all")}>{contentFilter} ×</button> : null}
+        </div>
+      ) : null}
+
+      {message && (
+        <button type="button" className={styles.message} onClick={() => setMessage("")}>
+          {message}
+        </button>
+      )}
+
+      {loading ? (
+        <section className={styles.empty}>Gyűjtemény betöltése…</section>
+      ) : visible.length === 0 ? (
+        <section className={styles.empty}>
+          <strong>{items.length ? "Nincs találat." : "Még nincs elmentett anyag."}</strong>
+          <span>Dolgozz fel egy videót, majd mentsd el a gyűjteménybe.</span>
+        </section>
+      ) : (
+        <section className={styles.groupList}>
+          {grouped.map(({ group, items: groupItems }) => (
+            <section key={group} id={groupId(group)} className={styles.groupSection}>
+              <div className={styles.groupHeader}>
+                <div>
+                  <span>{groupShort[group] || "•"}</span>
+                  <h2>{group}</h2>
+                </div>
+                <b>{groupItems.length}</b>
+              </div>
+
+              <div className={styles.grid}>
+                {groupItems.map((item) => {
+                  const open = expanded === item.id;
+                  return (
+                    <article key={item.id} className={styles.card}>
+                      <div className={styles.cardMain}>
+                        <LibraryMedia item={item} />
+
+                        <button
+                          type="button"
+                          className={styles.cardTextButton}
+                          onClick={() => setExpanded(open ? null : item.id)}
+                        >
+                          <div className={styles.cardText}>
+                            <h2>{item.title}</h2>
+                            <div className={styles.meta}>
+                              <span className={styles.platformDot}>●</span>
+                              <b>{item.platform || "Forrás"}</b>
+                              {(item.source_page_name || item.uploader) ? (
+                                item.source_page_url ? (
+                                  <a
+                                    href={item.source_page_url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    onClick={(event) => event.stopPropagation()}
+                                  >
+                                    · {item.source_page_name || item.uploader} ↗
+                                  </a>
+                                ) : (
+                                  <span>· {item.source_page_name || item.uploader}</span>
+                                )
+                              ) : null}
+                            </div>
+                            <p>{item.hungarian_summary || "Mentett szakmai videó"}</p>
+
+                            <div className={styles.catalogTagRow}>
+                              <b className={styles.groupTag}>{item.recipe_group || "Egyéb"}</b>
+                              {(item.ingredient_tags || []).slice(0, 2).map((tag) => <b key={"i-"+tag} className={styles.ingredientTag}>{tag}</b>)}
+                              {(item.content_tags || []).slice(0, 2).map((tag) => <b key={"c-"+tag} className={styles.contentTag}>{tag}</b>)}
+                            </div>
+                          </div>
+                        </button>
+
+                        <button
+                          type="button"
+                          className={styles.moreButton}
+                          onClick={() => setExpanded(open ? null : item.id)}
+                          aria-label={open ? "Bezárás" : "Megnyitás"}
+                        >
+                          {open ? "⌃" : "⋮"}
+                        </button>
+                      </div>
+
+                      <div className={styles.quickActions}>
+                        <button
+                          type="button"
+                          className={item.favorite ? styles.quickActive : styles.quick}
+                          onClick={() => void patch(item.id, { favorite: !item.favorite })}
+                        >☆ <span>Kedvenc</span></button>
+                        <button
+                          type="button"
+                          className={item.for_competition ? styles.quickActive : styles.quick}
+                          onClick={() => void patch(item.id, { for_competition: !item.for_competition })}
+                        >♜ <span>Versenyre</span></button>
+                        <button
+                          type="button"
+                          className={item.status === "to_try" ? styles.quickActive : styles.quick}
+                          onClick={() => void patch(item.id, { status: item.status === "to_try" ? "saved" : "to_try" })}
+                        >◷ <span>Kipróbálandó</span></button>
+                      </div>
+
+                      {open && (
+                        <div className={styles.details}>
+                          <div className={styles.statusButtons}>
+                            {(["saved", "to_try", "tested"] as LibraryStatus[]).map((status) => (
+                              <button
+                                key={status}
+                                type="button"
+                                className={item.status === status ? styles.statusActive : styles.statusButton}
+                                onClick={() => void patch(item.id, { status })}
+                              >
+                                {statusLabels[status]}
+                              </button>
+                            ))}
+                          </div>
+
+                          {item.ingredients?.length ? (
+                            <section className={styles.detailSection}>
+                              <h4>Hozzávalók</h4>
+                              <div className={styles.ingredients}>
+                                {item.ingredients.map((x, i) => (
+                                  <div key={i}>
+                                    <b>{x.amount || "—"}</b>
+                                    <span>{x.name}</span>
+                                    {x.note ? <small>{x.note}</small> : null}
+                                  </div>
+                                ))}
+                              </div>
+                            </section>
+                          ) : null}
+
+                          <DetailList title="Elkészítés" items={item.method_steps} />
+                          <DetailList title="Technológia" items={item.techniques} />
+                          <DetailList title="Tálalás" items={item.plating} />
+                          <DetailList title="Séftippek" items={item.chef_tips} />
+                          <DetailList title="Versenyötletek" items={item.competition_ideas} />
+
+                          <section className={styles.detailSection}>
+                            <h4>Saját megjegyzés</h4>
+                            <textarea
+                              className={styles.note}
+                              defaultValue={item.note}
+                              placeholder="Mit próbálnál ki belőle? Melyik versenyhez jó?"
+                              onBlur={(e) => void patch(item.id, { note: e.target.value })}
+                            />
+                          </section>
+
+                          <div className={styles.bottomActions}>
+                            <a href={item.source_url} target="_blank" rel="noreferrer">Forrás megnyitása ↗</a>
+                            <button type="button" onClick={() => void remove(item)}>Törlés</button>
+                          </div>
+                        </div>
+                      )}
+                    </article>
+                  );
+                })}
+              </div>
+            </section>
+          ))}
+        </section>
+      )}
+
+      {grouped.length > 1 ? (
+        <nav className={styles.groupRail} aria-label="Gyors navigáció">
+          {grouped.map(({ group }) => (
+            <button key={group} type="button" onClick={() => jumpToGroup(group)} title={group}>
+              {groupShort[group] || "•"}
+            </button>
+          ))}
+        </nav>
+      ) : null}
+
+      {sourceOpen ? (
+        <div className={styles.drawerOverlay} onClick={() => setSourceOpen(false)}>
+          <section className={styles.drawer} onClick={(event) => event.stopPropagation()}>
+            <div className={styles.drawerHead}>
+              <div><span>FORRÁSKÖNYVTÁR</span><h3>Mentett oldalak és profilok</h3></div>
+              <button type="button" onClick={() => setSourceOpen(false)}>×</button>
+            </div>
+            <input
+              className={styles.drawerSearch}
+              type="search"
+              value={sourceQuery}
+              onChange={(event) => setSourceQuery(event.target.value)}
+              placeholder="Keresés oldalra, profilra…"
+            />
+            <div className={styles.sourceGrid}>
+              {sourcePages
+                .filter((source) => !sourceQuery.trim() || `${source.name} ${source.platform}`.toLocaleLowerCase("hu").includes(sourceQuery.trim().toLocaleLowerCase("hu")))
+                .map((source) => (
+                  <div key={source.key} className={sourceFilter === source.key ? styles.sourceTileActive : styles.sourceTile}>
+                    <button type="button" onClick={() => { setSourceFilter(source.key); setSourceOpen(false); }}>
+                      <span>{source.platform}</span>
+                      <strong>{source.name}</strong>
+                      <small>{source.count} mentett videó</small>
+                    </button>
+                    {source.url ? <a href={source.url} target="_blank" rel="noreferrer">↗</a> : null}
+                  </div>
+                ))}
+            </div>
+            {sourceFilter !== "all" ? <button type="button" className={styles.clearDrawerFilter} onClick={() => { setSourceFilter("all"); setSourceOpen(false); }}>Összes forrás mutatása</button> : null}
+          </section>
+        </div>
+      ) : null}
+
+      {catalogOpen ? (
+        <div className={styles.drawerOverlay} onClick={() => setCatalogOpen(false)}>
+          <section className={styles.drawer} onClick={(event) => event.stopPropagation()}>
+            <div className={styles.drawerHead}>
+              <div><span>KATALÓGUS SZŰRŐK</span><h3>Mi érdekel?</h3></div>
+              <button type="button" onClick={() => setCatalogOpen(false)}>×</button>
+            </div>
+
+            <div className={styles.facetSection}>
+              <h4>Fogástípus</h4>
+              <div className={styles.facetGrid}>
+                {catalogFacets.groups.map(([name,count]) => (
+                  <button key={name} type="button" className={groupFilter===name ? styles.facetActive : styles.facet} onClick={() => setGroupFilter(groupFilter===name ? "all" : name)}>
+                    <span>{name}</span><b>{count}</b>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className={styles.facetSection}>
+              <h4>Fő alapanyag</h4>
+              <div className={styles.facetGrid}>
+                {catalogFacets.ingredients.map(([name,count]) => (
+                  <button key={name} type="button" className={ingredientFilter===name ? styles.facetActive : styles.facet} onClick={() => setIngredientFilter(ingredientFilter===name ? "all" : name)}>
+                    <span>{name}</span><b>{count}</b>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className={styles.facetSection}>
+              <h4>Elem / technika</h4>
+              <div className={styles.facetGrid}>
+                {catalogFacets.contents.map(([name,count]) => (
+                  <button key={name} type="button" className={contentFilter===name ? styles.facetActive : styles.facet} onClick={() => setContentFilter(contentFilter===name ? "all" : name)}>
+                    <span>{name}</span><b>{count}</b>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <button type="button" className={styles.applyFilters} onClick={() => setCatalogOpen(false)}>Találatok mutatása</button>
+          </section>
+        </div>
+      ) : null}
+
+      <div className={styles.floatingStack}>
+        {showTop ? (
+          <button
+            type="button"
+            className={styles.topButton}
+            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+            aria-label="Lap tetejére"
+          >
+            ↑
+          </button>
+        ) : null}
+        <button
+          type="button"
+          className={styles.addButton}
+          onClick={() => setQuickOpen(true)}
+          aria-label="Új link"
+        >
+          ＋
+        </button>
+      </div>
+
+      {quickOpen ? (
+        <div className={styles.quickOverlay} onClick={() => setQuickOpen(false)}>
+          <section className={styles.quickSheet} onClick={(event) => event.stopPropagation()}>
+            <div className={styles.quickSheetHead}>
+              <div>
+                <span>GYORS IMPORT</span>
+                <h3>Következő videó</h3>
+              </div>
+              <button type="button" onClick={() => setQuickOpen(false)}>×</button>
+            </div>
+            <p>Illeszd be a következő Facebook, Instagram, TikTok vagy YouTube linket. A MOTA Import automatikusan „Mindkettő” módra áll.</p>
+            <div className={styles.quickInputRow}>
+              <input
+                autoFocus
+                type="url"
+                value={quickUrl}
+                onChange={(event) => setQuickUrl(event.target.value)}
+                placeholder="https://…"
+              />
+              <button type="button" onClick={() => void pasteQuickLink()}>Beillesztés</button>
+            </div>
+            <button type="button" className={styles.quickGo} onClick={submitQuickImport}>
+              Tovább a feldolgozáshoz →
+            </button>
+          </section>
+        </div>
+      ) : null}
+
+      <section className={styles.device}>
+        <div className={styles.deviceIntro}>
+          <div className={styles.deviceIcon}>▣</div>
+          <div>
+            <strong>Eszközök összekapcsolása</strong>
+            <p>Szinkronizáld a gyűjteményed más eszközökre, és férj hozzá bárhol, bármikor.</p>
+          </div>
+          <span className={styles.deviceArrow}>›</span>
+        </div>
+        <div className={styles.deviceButtons}>
+          <button type="button" onClick={() => void copyKey()}>▤ &nbsp; Kulcs másolása</button>
+          <button type="button" onClick={importKey}>⌗ &nbsp; Kulcs beillesztése</button>
+        </div>
+      </section>
+
+      <footer className={styles.footer}>MOTA Import v0.6.1</footer>
+    </main>
+  );
+}
