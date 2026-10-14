@@ -8,7 +8,7 @@ export async function POST(req:Request){
  let data:unknown;try{data=await req.json()}catch{return NextResponse.json({error:"Hibás kérés."},{status:400})}
  const d=data as {text?:unknown;kind?:unknown};
  if(typeof d?.text!=="string"||d.text.length<15||d.text.length>12000 || !["recipe","math"].includes(String(d.kind)))return NextResponse.json({error:"15–12000 karakter hosszú, megfelelő típusú szöveg szükséges."},{status:400});
- const prompt=d.kind==="recipe"?"Készíts a forrásszövegből magyar nyelvű, pontos recept-adatjavaslatot. Ne találj ki mennyiségeket. Ha valami hiányzik, jelöld bizonytalanként. JSON: title, category, ingredients (name,amount,unit), steps, uncertainties.":"Készíts magyar matematikai tananyagegység-javaslatot az adott forrásszövegből. Ne találj ki képleteket. JSON: title, grade, theory, examples, uncertainties.";
+ const prompt=d.kind==="recipe"?"Ismerd fel a recept forrásnyelvét. Magyar nyelvű forrásnál őrizd meg a magyar megfogalmazást, és csak strukturáld a receptet. Más nyelvű forrásnál fordítsd magyarra a címet, a hozzávalók neveit, a kategóriát és az elkészítési lépéseket. Az eredeti számokat, mennyiségeket, arányokat, sütési hőfokokat és időket pontosan tartsd meg. Hiányzó adatot ne találj ki; a bizonytalanságokat jelöld. JSON: title, category, ingredients (name,amount,unit), steps, uncertainties.":"Készíts magyar matematikai tananyagegység-javaslatot az adott forrásszövegből. Ne találj ki képleteket. JSON: title, grade, theory, examples, uncertainties.";
  try {
   const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),25000);
   let response:Response;
