@@ -77,6 +77,7 @@ function DetailList({ title, items }: { title: string; items?: string[] }) {
 
 function LibraryMedia({ item }: { item: LibraryItem }) {
   const [videoUrl, setVideoUrl] = useState("");
+  const [imageFailed, setImageFailed] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -102,11 +103,11 @@ function LibraryMedia({ item }: { item: LibraryItem }) {
     );
   }
 
-  if (item.thumbnail_url) {
-    return <img className={styles.thumb} src={item.thumbnail_url} alt="" referrerPolicy="no-referrer" />;
+  if (item.thumbnail_url && !imageFailed) {
+    return <img className={styles.thumb} src={item.thumbnail_url} alt={item.title} referrerPolicy="no-referrer" onError={() => setImageFailed(true)} />;
   }
 
-  return <div className={styles.thumbPlaceholder}>{item.video_path ? "…" : "M"}</div>;
+  return <div className={styles.thumbPlaceholder} title="A forrás előnézeti képe nem érhető el">{item.video_path ? "▶" : "▣"}</div>;
 }
 
 
