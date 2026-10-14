@@ -12,7 +12,13 @@ export async function POST(req:Request){
  let data:unknown;try{data=await req.json()}catch{return NextResponse.json({error:"Hibás kérés."},{status:400})}
  const raw=(data as {url?:unknown})?.url;if(typeof raw!=="string"||raw.length>2000)return NextResponse.json({error:"Érvényes URL szükséges."},{status:400});
  try{
-  let address=await check(raw);let response:Response|null=null;
+  let address=await check(raw);
+  for(const param of ["fbclid","mibextid","utm_source","utm_medium","utm_campaign"])address.searchParams.delete(param);
+  const host=address.hostname.toLowerCase();
+  if(host==="facebook.com"||host==="www.facebook.com"||host==="m.facebook.com"||host==="fb.watch"){
+    return NextResponse.json({sourceUrl:address.toString(),title:address.pathname.includes("/reel")||address.pathname.includes("/share/r/")?"Facebook Reels – feldolgozásra vár":"Facebook-bejegyzés – feldolgozásra vár",text:"",structured:false,linkOnly:true,notice:"A Facebook nem teszi megbízhatóan hozzáférhetővé a videó leírását és teljes tartalmát. A hivatkozás menthető; a receptadatok nem lettek kinyerve."});
+  }
+  let response:Response|null=null;
   for(let i=0;i<3;i++){const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),9000);try{response=await fetch(address.toString(),{redirect:"manual",signal:controller.signal,headers:{"User-Agent":"Mozilla/5.0 (compatible; Tudaskonyvtar/0.2)","Accept":"text/html,application/xhtml+xml"}})}finally{clearTimeout(timer)}
    if([301,302,303,307,308].includes(response.status)){const location=response.headers.get("location");if(!location)throw Error("Hibás átirányítás.");address=await check(new URL(location,address).toString());continue}break;
   }
