@@ -6,7 +6,7 @@ import {listLibraryItems,saveLibraryResult,updateLibraryItem,createLibraryVideoU
 type Subject="matematika"|"gasztronomia";
 const subjectTag=(x:Subject)=>"tantargy:"+x;
 function platformOf(input:string){
- try {const h=new URL(input).hostname.toLowerCase();if(h==="youtu.be"||h.endsWith(".youtube.com")||h==="youtube.com")return "youtube";if(h==="facebook.com"||h.endsWith(".facebook.com")||h==="fb.watch")return "facebook";if(h==="tiktok.com"||h.endsWith(".tiktok.com"))return "tiktok";if(h==="instagram.com"||h.endsWith(".instagram.com"))return "instagram";}catch{}return "";
+ try {const u=new URL(input);if(u.protocol!=="https:"||u.username||u.password||u.port)return "";const h=u.hostname.toLowerCase();if(h==="youtu.be"||h.endsWith(".youtube.com")||h==="youtube.com")return "youtube";if(h==="facebook.com"||h.endsWith(".facebook.com")||h==="fb.watch")return "facebook";if(h==="tiktok.com"||h.endsWith(".tiktok.com"))return "tiktok";if(h==="instagram.com"||h.endsWith(".instagram.com"))return "instagram";}catch{}return "";
 }
 function thumbOf(input:string){
  try{const u=new URL(input);const h=u.hostname.toLowerCase();let id="";
@@ -36,6 +36,7 @@ export default function SharedVideoLibrary(){
  const [search,setSearch]=useState("");
  const [onlyFiles,setOnlyFiles]=useState(false);
  const [playUrl,setPlayUrl]=useState("");
+ const [brokenCovers,setBrokenCovers]=useState<string[]>([]);
  useEffect(()=>{void (async()=>{try{setItems(await listLibraryItems())}catch(e){setMsg(e instanceof Error?e.message:"A gyűjtemény nem tölthető be.")}finally{setLoading(false)}})()},[]);
  const shown=useMemo(()=>items.filter(x=>hasSubject(x,subject)&&(!onlyFiles||!!x.video_path)&&(!search||[x.title,x.source_url,metadata(x,"tema:"),metadata(x,"evfolyam:")].join(" ").toLocaleLowerCase("hu").includes(search.toLocaleLowerCase("hu")))),[items,subject,search,onlyFiles]);
  async function save(){
@@ -88,7 +89,7 @@ export default function SharedVideoLibrary(){
  {loading?<p>Gyűjtemény betöltése…</p>:shown.length===0?<p style={{color:colors.muted}}>Ebben a szűrésben még nincs videó.</p>:<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(min(100%,280px),1fr))",gap:14}}>
  {shown.map(item=><article key={item.id} style={{border:"1px solid "+colors.border,background:colors.card,borderRadius:14,overflow:"hidden"}}>
  <div style={{height:160,background:"#111827",position:"relative",display:"grid",placeItems:"center"}}>
- {item.thumbnail_url||thumbOf(item.source_url)?<img src={item.thumbnail_url||thumbOf(item.source_url)} alt="" style={{height:"100%",width:"100%",objectFit:"cover"}} onError={e=>{e.currentTarget.style.display="none"}}/>:<span style={{fontSize:38,color:"#60a5fa"}}>▶</span>}
+ {(!brokenCovers.includes(item.id)&&(item.thumbnail_url||thumbOf(item.source_url)))?<img src={item.thumbnail_url||thumbOf(item.source_url)} alt="" style={{height:"100%",width:"100%",objectFit:"cover"}} onError={()=>setBrokenCovers(xs=>[...xs,item.id])}/>:<span style={{fontSize:38,color:"#60a5fa"}}>▶</span>}
  <span style={{position:"absolute",bottom:8,left:8,background:item.video_path?"#166534":"#1f2937",color:"white",fontSize:11,padding:"5px 8px",borderRadius:7}}>{item.video_path?"✓ Videófájl tárolva":"Csak forráshivatkozás"}</span>
  </div>
  <div style={{padding:14}}><strong style={{display:"block",lineHeight:1.35,marginBottom:6}}>{item.title}</strong><div style={{color:colors.muted,fontSize:12,marginBottom:10}}>{item.platform}{metadata(item,"evfolyam:")?" · "+metadata(item,"evfolyam:")+". évf.":""}{metadata(item,"tema:")?" · "+metadata(item,"tema:"):""}</div>
