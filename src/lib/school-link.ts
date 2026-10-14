@@ -11,7 +11,7 @@ export function validateLinkCode(code:string){
  if(!raw||!sig||extra||!safeEqual(sig,sign(raw)))return null;
  try{const d=JSON.parse(Buffer.from(raw,"base64url").toString("utf8"));return d.v===1&&d.aud==="receptes-matektankonyv"&&typeof d.sub==="string"&&d.sub.length>8&&typeof d.exp==="number"&&d.exp>Date.now()&&d.exp<Date.now()+5*60*1000&&/^[a-f0-9]{32}$/.test(d.nonce)?d.sub as string:null}catch{return null}
 }
-export function issueSchoolCookie(owner:string){const raw=Buffer.from(JSON.stringify({owner,exp:Date.now()+7*24*60*60*1000})).toString("base64url");return raw+"."+sign(raw)}
+export function issueSchoolCookie(owner:string){const raw=Buffer.from(JSON.stringify({owner,exp:Date.now()+365*24*60*60*1000})).toString("base64url");return raw+"."+sign(raw)}
 export async function linkedSchoolOwner(){
  if(!schoolLinkReady())return null;
  const code=(await cookies()).get(schoolCookieName)?.value;
