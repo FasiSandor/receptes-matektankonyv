@@ -87,6 +87,12 @@ const focuses: { key: Focus; label: string; icon: string; color: string }[] = [
   { key: "translation", label: "Fordítás", icon: "文", color: "#7ea8ff" },
 ];
 
+function ResultThumbnail({url}:{url:string}) {
+ const [failed,setFailed]=useState(false);
+ useEffect(()=>setFailed(false),[url]);
+ return failed||!url?<div className={styles.resultThumbFallback} title="A forrás előnézeti képe nem érhető el">▣</div>:<img src={url} alt="Videó előnézeti kép" className={styles.resultThumb} referrerPolicy="no-referrer" onError={()=>setFailed(true)}/>;
+}
+
 function List({ title, items }: { title: string; items?: string[] }) {
   if (!items?.length) return null;
   return (
@@ -409,11 +415,7 @@ export default function MotaImportPage() {
           </div>
 
           <div className={styles.resultHero}>
-            {result.thumbnail_url ? (
-              <img src={result.thumbnail_url} alt="" className={styles.resultThumb} referrerPolicy="no-referrer" />
-            ) : (
-              <div className={styles.resultThumbFallback}>M</div>
-            )}
+            <ResultThumbnail url={result.thumbnail_url||""}/>
             <div className={styles.resultIntro}>
               <span>{result.platform}{result.uploader ? ` · ${result.uploader}` : ""}</span>
               <h2>{result.title}</h2>
