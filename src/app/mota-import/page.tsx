@@ -114,6 +114,8 @@ export default function MotaImportPage() {
   const [result, setResult] = useState<Result | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [selectedVideo,setSelectedVideo]=useState<File|null>(null);
+  const [uploadedVideoResult,setUploadedVideoResult]=useState(false);
   const lastVideoBlob = useRef<Blob | null>(null);
   const lastVideoUrl = useRef("");
 
@@ -237,6 +239,7 @@ export default function MotaImportPage() {
     setError("");
     setResult(null);
     setSaved(false);
+    setUploadedVideoResult(false);
     if (lastVideoUrl.current !== url.trim()) {
       lastVideoBlob.current = null;
       lastVideoUrl.current = "";
@@ -254,6 +257,46 @@ export default function MotaImportPage() {
     } finally {
       setBusy(false);
     }
+  }
+
+  async function analyzeLocalVideo() {
+    if(!selectedVideo||busy)return;
+    setBusy(true);setError("");setResult(null);setSaved(false);
+    try{
+      setStatus("Videó képkockáinak előkészítése…");
+      const objectUrl=URL.createObjectURL(selectedVideo);
+      const video=document.createElement("video");
+      video.preload="auto";video.muted=true;video.playsInline=true;video.src=objectUrl;
+      try{
+        await new Promise<void>((resolve,reject)=>{video.onloadedmetadata=()=>resolve();video.onerror=()=>reject(new Error("A videófájlt a böngésző nem tudja megnyitni."));});
+        if(!Number.isFinite(video.duration)||video.duration<=0)throw new Error("Nem sikerült beolvasni a videó hosszát.");
+        const canvas=document.createElement("canvas");canvas.width=360;canvas.height=202;
+        const ctx=canvas.getContext("2d");if(!ctx)throw new Error("A képkockák feldolgozása nem támogatott.");
+        const frames:{data:string;time:number}[]=[];
+        for(let i=0;i<8;i++){
+          const time=Math.max(0,Math.min(video.duration-0.05,video.duration*(i+0.5)/8));
+          video.currentTime=time;
+          await new Promise<void>((resolve,reject)=>{
+            const timer=setTimeout(()=>reject(new Error("A videó képkockáját nem sikerült beolvasni.")),10000);
+            video.onseeked=()=>{clearTimeout(timer);resolve();};
+            video.onerror=()=>{clearTimeout(timer);reject(new Error("Videóolvasási hiba."));};
+          });
+          ctx.drawImage(video,0,0,canvas.width,canvas.height);
+          frames.push({data:canvas.toDataURL("image/jpeg",0.7),time});
+          setStatus("Videó vizsgálata: "+(i+1)+"/8 képkocka…");
+        }
+        setStatus("A Gemini elemzi a videó képi tartalmát…");
+        const response=await fetch("/api/mota-frames",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({frames,sourceUrl:url.trim(),focus})});
+        const data=await response.json().catch(()=>null);
+        if(!response.ok)throw new Error(data?.error||"A videó elemzése nem sikerült.");
+        setResult(data as Result);
+        setUploadedVideoResult(true);
+        lastVideoBlob.current=selectedVideo;
+        lastVideoUrl.current=url.trim();
+        setStatus("Kész: a receptjavaslat képkockákból készült. A videó hangját még nem elemeztük.");
+      }finally{video.pause();video.removeAttribute("src");video.load();URL.revokeObjectURL(objectUrl);}
+    }catch(e){setError(e instanceof Error?e.message:"Videóelemzési hiba.");setStatus("");}
+    finally{setBusy(false);}
   }
 
   async function saveUnprocessedLink() {
@@ -290,11 +333,12 @@ export default function MotaImportPage() {
       try {
         setStatus("Videó mentése a Gyűjteménybe…");
         let blob = lastVideoUrl.current === result.source_url ? lastVideoBlob.current : null;
-        if (!blob) {
+        if (!blob && !uploadedVideoResult) {
           const downloaded = await fetchVideoBlob();
           blob = downloaded.blob;
         }
         if (blob) await uploadLibraryVideo(item.id, blob);
+        else videoWarning="A videófájl külön nem lett eltárolva.";
       } catch (videoError) {
         videoWarning = videoError instanceof Error ? videoError.message : "A videó külön mentése nem sikerült.";
       }
@@ -434,6 +478,12 @@ export default function MotaImportPage() {
             </button>
           </div>
         )}
+        <div style={{marginTop:18,padding:16,border:"1px solid #51407b",borderRadius:14,background:"#19152d",display:"grid",gap:10}}>
+          <strong style={{color:"#e9dfff"}}>Videófájl elemzése – Facebook helyett is</strong>
+          <small style={{color:"#c1b6df"}}>Válassz ki egy MP4/MOV videót a Fájlokból vagy Fotókból. A Gemini a videó képkockáiból készít magyar receptjavaslatot. A hangsáv feldolgozása még nem része ennek a funkciónak.</small>
+          <input type="file" accept="video/*,.mp4,.mov,.m4v" aria-label="Videófájl kiválasztása" onChange={e=>setSelectedVideo(e.target.files?.[0]||null)} style={{maxWidth:"100%",color:"#eee"}}/>
+          <button type="button" className={styles.run} disabled={!selectedVideo||busy} onClick={()=>void analyzeLocalVideo()}><span>▣</span><strong>{busy?"Feldolgozás…":"Kiválasztott videó elemzése"}</strong><span>→</span></button>
+        </div>
         <p className={styles.note}>Csak publikus tartalom. Facebook-jelszót vagy belépési cookie-t nem kérünk és nem tárolunk.</p>
       </section>
 
