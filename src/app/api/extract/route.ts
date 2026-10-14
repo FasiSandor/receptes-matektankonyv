@@ -39,7 +39,8 @@ export async function POST(req:Request){
   const instructions=structured?.recipeInstructions;
   const lines=Array.isArray(instructions)?instructions.map(x=>typeof x==="string"?x:typeof x==="object"&&x!==null?String((x as {text?:unknown}).text||""):"").filter(Boolean):[];
   const article=html.match(/<article\b[^>]*>([\s\S]*?)<\/article>/i)?.[1]||html.match(/<main\b[^>]*>([\s\S]*?)<\/main>/i)?.[1]||html;
-  const extracted=[title,Array.isArray(ingredients)?"Hozzávalók:\n"+ingredients.join("\n"):"",lines.length?"Elkészítés:\n"+lines.join("\n"):"",textOnly(article).slice(0,14000)].filter(Boolean).join("\n\n").slice(0,16000);
+  const hasRecipe=Array.isArray(ingredients)&&ingredients.length>0&&lines.length>0;
+  const extracted=[title,Array.isArray(ingredients)?"Hozzávalók:\n"+ingredients.join("\n"):"",lines.length?"Elkészítés:\n"+lines.join("\n"):"",hasRecipe?"":textOnly(article).slice(0,10500)].filter(Boolean).join("\n\n").slice(0,12000);
   if(extracted.length<80)throw Error("Nem sikerült elegendő receptszöveget kinyerni.");
   return NextResponse.json({title,sourceUrl:address.toString(),text:extracted,structured:!!structured,notice:"Az automatikusan kinyert adatokat ellenőrizni kell. A weboldal tartalma hiányos lehet."});
  }catch(e){return NextResponse.json({error:e instanceof Error?e.message:"A link nem dolgozható fel. Másold be a szöveget kézzel."},{status:422})}
