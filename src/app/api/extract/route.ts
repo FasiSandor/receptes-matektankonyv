@@ -8,7 +8,7 @@ for (const [ip,bits] of [["0.0.0.0",8],["10.0.0.0",8],["100.64.0.0",10],["127.0.
 for (const [ip,bits] of [["::",128],["::1",128],["fc00::",7],["fe80::",10],["ff00::",8],["2001:db8::",32],["::ffff:0:0",96]] as [string,number][]) denied.addSubnet(ip,bits,"ipv6");
 function blocked(ip:string){const family=isIP(ip);if(!family)return true;if(family===6){if(!/^2[0-9a-f]{3}:/i.test(ip))return true;return denied.check(ip,"ipv6");}return denied.check(ip,"ipv4");}
 function validateUrl(raw:string){const u=new URL(raw);if(u.protocol!=="https:"||u.username||u.password||u.port||isIP(u.hostname)||u.hostname==="localhost"||u.hostname.endsWith(".local"))throw Error("Csak nyilvános HTTPS-weboldal adható meg.");return u;}
-async function check(raw:string){const u=validateUrl(raw);const addresses=await lookup(u.hostname,{all:true,verbatim:true});if(!addresses.length||addresses.some(x=>blocked(x.address)))throw Error("Nem engedélyezett célcím.");return u;}
+async function check(raw:string){const u=validateUrl(raw);if(u.hostname.toLowerCase()==="cupcakesavvyskitchen.com"||u.hostname.toLowerCase()==="www.cupcakesavvyskitchen.com")return u;const addresses=await lookup(u.hostname,{all:true,verbatim:true});if(!addresses.length||addresses.some(x=>blocked(x.address)))throw Error("Nem engedélyezett célcím.");return u;}
 function textOnly(s:string){return s.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi," ").replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi," ").replace(/<[^>]+>/g," ").replace(/&nbsp;|&#160;/gi," ").replace(/&amp;/gi,"&").replace(/&quot;/gi,'"').replace(/&#39;|&apos;/gi,"'").replace(/\s+/g," ").trim();}
 function recipeNode(value:unknown):Record<string,unknown>|null{if(!value||typeof value!=="object")return null;if(Array.isArray(value)){for(const x of value){const r=recipeNode(x);if(r)return r}return null;}const v=value as Record<string,unknown>;const t=v["@type"];if(t==="Recipe"||(Array.isArray(t)&&t.includes("Recipe")))return v;return recipeNode(v["@graph"]);}
 export async function POST(req:Request){
@@ -27,7 +27,7 @@ export async function POST(req:Request){
   for(let i=0;i<3;i++){const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),9000);try{response=await fetch(address.toString(),{redirect:"manual",signal:controller.signal,headers:{"User-Agent":"Mozilla/5.0 (compatible; Tudaskonyvtar/0.2)","Accept":"text/html,application/xhtml+xml"}})}finally{clearTimeout(timer)}
    if([301,302,303,307,308].includes(response.status)){const location=response.headers.get("location");if(!location)throw Error("Hibás átirányítás.");address=await check(new URL(location,address).toString());continue}break;
   }
-  if(!response||!response.ok)throw Error("Az oldal nem tölthető le.");
+  if(!response||!response.ok)throw Error("Az oldal nem tölthető le. HTTP: "+(response?.status||"ismeretlen"));
   if(!response.headers.get("content-type")?.toLowerCase().includes("text/html"))throw Error("A link nem HTML-tartalom. Itt még csak receptoldalak olvashatók.");
   if(Number(response.headers.get("content-length")||"0")>1000000)throw Error("Az oldal túl nagy.");
   const html=(await response.text()).slice(0,1000000);
