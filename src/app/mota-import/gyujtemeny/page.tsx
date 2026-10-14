@@ -88,10 +88,10 @@ function stableVideoThumbnail(url:string):string {
 }
 function LibraryMedia({ item }: { item: LibraryItem }) {
   const [videoUrl, setVideoUrl] = useState("");
-  const [imageFailed, setImageFailed] = useState(false);
+  const [imageStage, setImageStage] = useState(0);
   const stableThumb = stableVideoThumbnail(item.source_url);
-  const thumb = imageFailed ? stableThumb : (item.thumbnail_url || stableThumb);
-  useEffect(()=>setImageFailed(false),[item.id,item.thumbnail_url]);
+  const thumb = imageStage===0 ? (item.thumbnail_url || stableThumb) : imageStage===1 && stableThumb && stableThumb!==item.thumbnail_url ? stableThumb : "";
+  useEffect(()=>setImageStage(0),[item.id,item.thumbnail_url]);
 
   useEffect(() => {
     let active = true;
@@ -118,7 +118,7 @@ function LibraryMedia({ item }: { item: LibraryItem }) {
   }
 
   if (thumb) {
-    return <a href={item.source_url} target="_blank" rel="noopener noreferrer" title="Videó megnyitása"><img className={styles.thumb} src={thumb} alt={item.title} referrerPolicy="no-referrer" onError={() => setImageFailed(true)} /></a>;
+    return <a href={item.source_url} target="_blank" rel="noopener noreferrer" title="Videó megnyitása"><img className={styles.thumb} src={thumb} alt={item.title} referrerPolicy="no-referrer" onError={() => setImageStage(x=>Math.min(2,x+1))} /></a>;
   }
 
   return <a href={item.source_url} target="_blank" rel="noopener noreferrer" className={styles.thumbPlaceholder} title="Videó megnyitása az eredeti oldalon" style={{display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,textDecoration:"none",color:"#bcaaff"}} aria-label="Videó lejátszása a forrásoldalon">▶</a>;
