@@ -256,6 +256,28 @@ export default function MotaImportPage() {
     }
   }
 
+  async function saveUnprocessedLink() {
+    if (saving || !url.trim() || !detectedSource) return;
+    setSaving(true);
+    setError("");
+    try {
+      const currentUrl = url.trim();
+      await saveLibraryResult({
+        title: "Facebook-videó – feldolgozásra vár",
+        source_url: currentUrl,
+        platform: detectedSource,
+        hungarian_summary: "A videó adatait a forrás nem adta át. A link megőrizve; a receptet még nem nyertük ki.",
+        recipe_group: "Egyéb",
+        ingredients: [],
+        method_steps: [],
+        tags: ["feldolgozásra vár"],
+      });
+      setStatus("A videólinket elmentettem a Gyűjteménybe. Receptet még nem nyertem ki.");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "A link mentése sikertelen.");
+    } finally { setSaving(false); }
+  }
+
   async function saveResult() {
     if (!result || saving) return;
     setSaving(true);
@@ -404,6 +426,14 @@ export default function MotaImportPage() {
 
         {status && <div className={styles.status}>{status}</div>}
         {error && <div className={styles.error}>{error}</div>}
+        {error && detectedSource === "facebook" && (
+          <div style={{marginTop:12,display:"grid",gap:8}}>
+            <p style={{fontSize:13,color:"#cbd5e1"}}>A Facebook nem engedte a videó kinyerését. A linket ettől még megőrizheted a gyűjteményben.</p>
+            <button type="button" disabled={saving} onClick={() => void saveUnprocessedLink()} className={styles.run}>
+              <span>▤</span><strong>{saving ? "Mentés..." : "Facebook-link mentése feldolgozásra váróként"}</strong><span>→</span>
+            </button>
+          </div>
+        )}
         <p className={styles.note}>Csak publikus tartalom. Facebook-jelszót vagy belépési cookie-t nem kérünk és nem tárolunk.</p>
       </section>
 
