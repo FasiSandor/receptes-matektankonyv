@@ -526,6 +526,16 @@ export default function CollectionPage() {
                             <small style={{display:"block",marginBottom:8}}>A telefonodról választott kép tartósan a gyűjteményelemhez kerül, a recept nem változik.</small>
                             <input type="file" accept="image/*" aria-label="Borítókép kiválasztása" style={{maxWidth:"100%"}} onChange={event => { const file=event.target.files?.[0]; if(file)void replaceCover(item.id,file); event.target.value=""; }} />
                           </div>
+                          {(item.ingredients?.length || item.method_steps?.length) ? (
+                            <div style={{margin:"12px 0",padding:14,border:"1px solid #3b82f6",borderRadius:12,background:"#162441"}}>
+                              <strong style={{display:"block",marginBottom:7}}>Recepttár</strong>
+                              <p style={{fontSize:13,margin:"0 0 10px",color:"#b8c9ed"}}>A feldolgozott eredeti forrás megmarad, a recept jóváhagyottként külön megjelenik a Recepttárban.</p>
+                              <button type="button" className={styles.statusActive} onClick={() => void patch(item.id,{tags:(item.tags||[]).includes("recepttar:approved")?(item.tags||[]).filter(t=>t!=="recepttar:approved"):[...(item.tags||[]),"recepttar:approved"]})}>
+                                {(item.tags||[]).includes("recepttar:approved")?"↩ Vissza a Forrástárba":"✓ Áthelyezés a Recepttárba"}
+                              </button>
+                              <Link href="/recepttar" style={{marginLeft:12,color:"#93c5fd",fontWeight:700}}>Recepttár →</Link>
+                            </div>
+                          ) : null}
                           {item.ingredients?.length ? (
                             <section className={styles.detailSection}>
                               <h4>Hozzávalók</h4>
