@@ -107,7 +107,7 @@ function LibraryMedia({ item }: { item: LibraryItem }) {
     return <img className={styles.thumb} src={item.thumbnail_url} alt={item.title} referrerPolicy="no-referrer" onError={() => setImageFailed(true)} />;
   }
 
-  return <div className={styles.thumbPlaceholder} title="A forrás előnézeti képe nem érhető el">{item.video_path ? "▶" : "▣"}</div>;
+  return <a href={item.source_url} target="_blank" rel="noopener noreferrer" className={styles.thumbPlaceholder} title="Videó megnyitása az eredeti oldalon" style={{display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,textDecoration:"none",color:"#bcaaff"}} aria-label="Videó lejátszása a forrásoldalon">▶</a>;
 }
 
 
@@ -513,7 +513,7 @@ export default function CollectionPage() {
                           </section>
 
                           <div className={styles.bottomActions}>
-                            <a href={item.source_url} target="_blank" rel="noreferrer">Forrás megnyitása ↗</a>
+                            <a href={item.source_url} target="_blank" rel="noopener noreferrer">{item.platform.toLowerCase().includes("facebook") ? "▶ Videó lejátszása a Facebookon ↗" : "▶ Videó megnyitása a forrásoldalon ↗"}</a>
                             <button type="button" onClick={() => void remove(item)}>Törlés</button>
                           </div>
                         </div>
