@@ -115,6 +115,7 @@ export default function MotaImportPage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [selectedVideo,setSelectedVideo]=useState<File|null>(null);
+  const [selectedAudio,setSelectedAudio]=useState<File|null>(null);
   const [uploadedVideoResult,setUploadedVideoResult]=useState(false);
   const lastVideoBlob = useRef<Blob | null>(null);
   const lastVideoUrl = useRef("");
@@ -285,15 +286,24 @@ export default function MotaImportPage() {
           frames.push({data:canvas.toDataURL("image/jpeg",0.7),time});
           setStatus("Videó vizsgálata: "+(i+1)+"/8 képkocka…");
         }
-        setStatus("A Gemini elemzi a videó képi tartalmát…");
-        const response=await fetch("/api/mota-frames",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({frames,sourceUrl:url.trim(),focus})});
+        let audio: {data:string;mimeType:string}|undefined;
+        if(selectedAudio){
+          if(selectedAudio.size>2*1024*1024)throw new Error("A hangrészlet legfeljebb 2 MB lehet.");
+          const mime=selectedAudio.type|| (selectedAudio.name.toLowerCase().endsWith(".mp3")?"audio/mpeg":"audio/mp4");
+          const buffer=await selectedAudio.arrayBuffer();
+          const bytes=new Uint8Array(buffer);let binary="";
+          for(let i=0;i<bytes.length;i+=8192)binary+=String.fromCharCode(...bytes.subarray(i,i+8192));
+          audio={mimeType:mime,data:btoa(binary)};
+        }
+        setStatus(audio?"A Gemini elemzi a videó képeit és a hangrészletet…":"A Gemini elemzi a videó képi tartalmát…");
+        const response=await fetch("/api/mota-frames",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({frames,sourceUrl:url.trim(),focus,audio})});
         const data=await response.json().catch(()=>null);
         if(!response.ok)throw new Error(data?.error||"A videó elemzése nem sikerült.");
         setResult(data as Result);
         setUploadedVideoResult(true);
         lastVideoBlob.current=selectedVideo;
         lastVideoUrl.current=url.trim();
-        setStatus("Kész: a receptjavaslat képkockákból készült. A videó hangját még nem elemeztük.");
+        setStatus(audio?"Kész: a videó képei és a hangrészlet alapján készült receptjavaslat.":"Kész: a receptjavaslat képkockákból készült. Hangsávot nem elemeztünk.");
       }finally{video.pause();video.removeAttribute("src");video.load();URL.revokeObjectURL(objectUrl);}
     }catch(e){setError(e instanceof Error?e.message:"Videóelemzési hiba.");setStatus("");}
     finally{setBusy(false);}
@@ -480,8 +490,10 @@ export default function MotaImportPage() {
         )}
         <div style={{marginTop:18,padding:16,border:"1px solid #51407b",borderRadius:14,background:"#19152d",display:"grid",gap:10}}>
           <strong style={{color:"#e9dfff"}}>Videófájl elemzése – Facebook helyett is</strong>
-          <small style={{color:"#c1b6df"}}>Válassz ki egy MP4/MOV videót a Fájlokból vagy Fotókból. A Gemini a videó képkockáiból készít magyar receptjavaslatot. A hangsáv feldolgozása még nem része ennek a funkciónak.</small>
+          <small style={{color:"#c1b6df"}}>Válassz ki egy MP4/MOV videót a Fájlokból vagy Fotókból. A Gemini a videó képkockáiból készít magyar receptjavaslatot. Külön hangrészlet feltöltésével a beszéd is elemezhető.</small>
           <input type="file" accept="video/*,.mp4,.mov,.m4v" aria-label="Videófájl kiválasztása" onChange={e=>setSelectedVideo(e.target.files?.[0]||null)} style={{maxWidth:"100%",color:"#eee"}}/>
+          <small style={{color:"#c1b6df"}}>Opcionális hangsáv: ha külön MP3/M4A/WAV hangrészleted is van (max. 2 MB), azt a képekkel együtt elemezzük.</small>
+          <input type="file" accept="audio/*,.m4a,.mp3,.wav,.aac" aria-label="Opcionális hangrészlet" onChange={e=>setSelectedAudio(e.target.files?.[0]||null)} style={{maxWidth:"100%",color:"#eee"}}/>
           <button type="button" className={styles.run} disabled={!selectedVideo||busy} onClick={()=>void analyzeLocalVideo()}><span>▣</span><strong>{busy?"Feldolgozás…":"Kiválasztott videó elemzése"}</strong><span>→</span></button>
         </div>
         <p className={styles.note}>Csak publikus tartalom. Facebook-jelszót vagy belépési cookie-t nem kérünk és nem tárolunk.</p>
