@@ -29,3 +29,14 @@ export async function PATCH(req:Request,{params}:Params){
  await sql`UPDATE content_items SET title=${item.title.trim()},category=${typeof item.category==="string"?item.category.slice(0,100):null} WHERE id=${id} AND owner_id=${owner}`;
  return NextResponse.json({id,version:newVersion,status:"draft"});}catch{return NextResponse.json({error:"A mentés sikertelen."},{status:503})}
 }
+
+export async function DELETE(_:Request,{params}:Params){
+ if(!await authenticated())return NextResponse.json({error:"Bejelentkezés szükséges."},{status:401});
+ const {id}=await params;if(!validId(id))return NextResponse.json({error:"Hibás azonosító."},{status:400});
+ try{
+  const sql=db(),owner=await ownerId();
+  const rows=await sql`DELETE FROM content_items WHERE id=${id} AND owner_id=${owner} AND status='draft' RETURNING id`;
+  if(!rows.length)return NextResponse.json({error:"A piszkozat nem található vagy nem törölhető."},{status:404});
+  return NextResponse.json({deleted:true,id});
+ }catch{return NextResponse.json({error:"Törlés sikertelen."},{status:503})}
+}
