@@ -275,7 +275,7 @@ export async function listLibraryItems(): Promise<LibraryItem[]> {
 }
 
 export async function updateLibraryItem(id: string, patch: Partial<Pick<LibraryItem,
-  "favorite" | "for_competition" | "status" | "note"
+  "favorite" | "for_competition" | "status" | "note" | "thumbnail_url"
 >>): Promise<LibraryItem> {
   const rows = await api(`mota_import_items?id=eq.${encodeURIComponent(id)}`, {
     method: "PATCH",
