@@ -282,7 +282,8 @@ export default function CollectionPage() {
       context.drawImage(image, 0, 0, canvas.width, canvas.height);
       const cover = canvas.toDataURL("image/jpeg", 0.68);
       if (cover.length > 150000) throw new Error("A kép mentéshez túl nagy.");
-      await patch(id, { thumbnail_url: cover });
+      const updated = await updateLibraryItem(id, { thumbnail_url: cover });
+      setItems(current => current.map(item => item.id === id ? updated : item));
       setMessage("Borítókép frissítve. A recept és a videólink változatlan.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "A borítókép mentése nem sikerült.");
@@ -558,6 +559,7 @@ export default function CollectionPage() {
 
                           <div className={styles.bottomActions}>
                             <a href={item.source_url} target="_blank" rel="noopener noreferrer">{item.platform.toLowerCase().includes("facebook") ? "▶ Videó lejátszása a Facebookon ↗" : "▶ Videó megnyitása a forrásoldalon ↗"}</a>
+                            <Link href={`/mota-import?url=${encodeURIComponent(item.source_url)}`}>✦ Újraelemzés / videófeltöltés</Link>
                             <button type="button" onClick={() => void remove(item)}>Törlés</button>
                           </div>
                         </div>
