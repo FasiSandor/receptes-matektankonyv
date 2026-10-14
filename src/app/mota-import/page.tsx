@@ -283,10 +283,10 @@ export default function MotaImportPage() {
   }
 
   return (
-    <main className={styles.shell}>
+    <main className={styles.shell}><a href="/" style={{display:"inline-block",color:"#b2a0ff",padding:"5px 0 12px",textDecoration:"none",fontSize:13,fontWeight:700}}>← Receptes és Matektankönyv</a>
       <header className={styles.header}>
         <Link href="/mota-import" className={styles.brand}>
-          <img src="/mota-import/icon-180.png" alt="" className={styles.brandIcon} />
+          <img src="https://recept-ai-phi.vercel.app/mota-import/icon-180.png" alt="" className={styles.brandIcon} />
           <span className={styles.brandText}>
             <strong>MOTA Import</strong>
             <small>Gasztro videó-katalógus & tudástár</small>
