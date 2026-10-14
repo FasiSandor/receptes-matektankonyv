@@ -264,6 +264,31 @@ export default function CollectionPage() {
     }
   }
 
+  async function replaceCover(id: string, file: File) {
+    if (!file.type.startsWith("image/")) { setMessage("Válassz egy képfájlt."); return; }
+    if (file.size > 12 * 1024 * 1024) { setMessage("A kép legfeljebb 12 MB lehet."); return; }
+    let objectUrl = "";
+    try {
+      objectUrl = URL.createObjectURL(file);
+      const image = new Image();
+      image.src = objectUrl;
+      await image.decode();
+      const canvas = document.createElement("canvas");
+      const scale = Math.min(1, 420 / Math.max(image.naturalWidth, image.naturalHeight));
+      canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+      canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+      const context = canvas.getContext("2d");
+      if (!context) throw new Error("A kép nem dolgozható fel.");
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+      const cover = canvas.toDataURL("image/jpeg", 0.68);
+      if (cover.length > 150000) throw new Error("A kép mentéshez túl nagy.");
+      await patch(id, { thumbnail_url: cover });
+      setMessage("Borítókép frissítve. A recept és a videólink változatlan.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "A borítókép mentése nem sikerült.");
+    } finally { if (objectUrl) URL.revokeObjectURL(objectUrl); }
+  }
+
   async function remove(item: LibraryItem) {
     if (!confirm(`Törlöd a gyűjteményből?\n\n${item.title}`)) return;
     try {
@@ -495,6 +520,11 @@ export default function CollectionPage() {
                             ))}
                           </div>
 
+                          <div style={{margin:"12px 0",padding:"12px",border:"1px solid #51407b",borderRadius:12}}>
+                            <label style={{display:"block",fontWeight:700,marginBottom:7}}>Borítókép pótlása</label>
+                            <small style={{display:"block",marginBottom:8}}>A telefonodról választott kép tartósan a gyűjteményelemhez kerül, a recept nem változik.</small>
+                            <input type="file" accept="image/*" aria-label="Borítókép kiválasztása" style={{maxWidth:"100%"}} onChange={event => { const file=event.target.files?.[0]; if(file)void replaceCover(item.id,file); event.target.value=""; }} />
+                          </div>
                           {item.ingredients?.length ? (
                             <section className={styles.detailSection}>
                               <h4>Hozzávalók</h4>
