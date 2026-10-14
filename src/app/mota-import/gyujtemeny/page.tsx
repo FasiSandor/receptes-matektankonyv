@@ -75,9 +75,23 @@ function DetailList({ title, items }: { title: string; items?: string[] }) {
   );
 }
 
+function stableVideoThumbnail(url:string):string {
+ try {
+  const u=new URL(url);
+  const host=u.hostname.toLowerCase();
+  let id="";
+  if(host==="youtu.be"||host.endsWith(".youtu.be")) id=u.pathname.split("/")[1]||"";
+  else if(host==="youtube.com"||host.endsWith(".youtube.com")) id=u.searchParams.get("v")||(u.pathname.match(/^\/(?:shorts|embed)\/([^/]+)/)?.[1]||"");
+  if(/^[a-zA-Z0-9_-]{11}$/.test(id))return "https://i.ytimg.com/vi/"+id+"/hqdefault.jpg";
+ }catch{}
+ return "";
+}
 function LibraryMedia({ item }: { item: LibraryItem }) {
   const [videoUrl, setVideoUrl] = useState("");
   const [imageFailed, setImageFailed] = useState(false);
+  const stableThumb = stableVideoThumbnail(item.source_url);
+  const thumb = imageFailed ? stableThumb : (item.thumbnail_url || stableThumb);
+  useEffect(()=>setImageFailed(false),[item.id,item.thumbnail_url]);
 
   useEffect(() => {
     let active = true;
@@ -95,7 +109,7 @@ function LibraryMedia({ item }: { item: LibraryItem }) {
       <video
         className={styles.videoPreview}
         src={videoUrl}
-        poster={item.thumbnail_url || undefined}
+        poster={thumb || undefined}
         controls
         playsInline
         preload="metadata"
@@ -103,8 +117,8 @@ function LibraryMedia({ item }: { item: LibraryItem }) {
     );
   }
 
-  if (item.thumbnail_url && !imageFailed) {
-    return <img className={styles.thumb} src={item.thumbnail_url} alt={item.title} referrerPolicy="no-referrer" onError={() => setImageFailed(true)} />;
+  if (thumb) {
+    return <a href={item.source_url} target="_blank" rel="noopener noreferrer" title="Videó megnyitása"><img className={styles.thumb} src={thumb} alt={item.title} referrerPolicy="no-referrer" onError={() => setImageFailed(true)} /></a>;
   }
 
   return <a href={item.source_url} target="_blank" rel="noopener noreferrer" className={styles.thumbPlaceholder} title="Videó megnyitása az eredeti oldalon" style={{display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,textDecoration:"none",color:"#bcaaff"}} aria-label="Videó lejátszása a forrásoldalon">▶</a>;
