@@ -4,7 +4,7 @@ import {authenticated} from "@/lib/auth";
 import {issueSchoolCookie,linkedSchoolOwner,schoolCookieName,schoolLinkReady,validateLinkCode} from "@/lib/school-link";
 export const runtime="nodejs";export const dynamic="force-dynamic";
 const opts={httpOnly:true,secure:process.env.NODE_ENV==="production",sameSite:"strict" as const,path:"/",maxAge:365*24*60*60};
-export async function GET(){if(!await authenticated())return NextResponse.json({error:"Bejelentkezés szükséges."},{status:401});return NextResponse.json({ready:schoolLinkReady(),linked:Boolean(await linkedSchoolOwner())},{headers:{"Cache-Control":"no-store"}})}
+export async function GET(){if(!await authenticated())return NextResponse.json({error:"Bejelentkezés szükséges."},{status:401});return NextResponse.json({ready:schoolLinkReady()&&Boolean(process.env.SCHOOL_SOURCE_DATABASE_URL),linked:Boolean(await linkedSchoolOwner()),sourceConfigured:Boolean(process.env.SCHOOL_SOURCE_DATABASE_URL),message:!schoolLinkReady()?"Az összekapcsolás titkos kulcsa nincs konfigurálva.":!process.env.SCHOOL_SOURCE_DATABASE_URL?"Az iskolai adatkapcsolat még nem aktív.":"Az összekapcsolás készen áll."},{headers:{"Cache-Control":"private, no-store"}})}
 export async function POST(request:NextRequest){
  const origin=request.headers.get("origin");
  if(!origin||origin!==new URL(request.url).origin)return NextResponse.json({error:"Érvénytelen kérésforrás."},{status:403});
