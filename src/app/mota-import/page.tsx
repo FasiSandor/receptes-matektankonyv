@@ -333,7 +333,8 @@ export default function MotaImportPage() {
         method_steps: [],
         tags: ["feldolgozásra vár"],
       });
-      setStatus("A videólinket elmentettem a Gyűjteménybe. Receptet még nem nyertem ki.");
+      setSaved(true);
+      setStatus("A forráslink elmentve. A recept feldolgozásra vár.");
     } catch (e) {
       setError(e instanceof Error ? e.message : "A link mentése sikertelen.");
     } finally { setSaving(false); }
@@ -557,7 +558,7 @@ export default function MotaImportPage() {
         </section>
       )}
 
-      <footer className={styles.footer}>Tudáskönyvtár · Hozzáadás</footer>
+      {saved&&<div role="status" className={styles.savedNext}><strong>✓ Elmentve a Forrástárba</strong><p>A forrás ott megmarad. A rendezett receptek a Recepttárban kezelhetők.</p><Link href="/mota-import/gyujtemeny">Forrástár megnyitása →</Link><Link href="/recepttar">Recepttár megnyitása →</Link></div>}<footer className={styles.footer}>Tudáskönyvtár · Hozzáadás</footer>
     </main></KnowledgeShell>
   );
 }
