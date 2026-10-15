@@ -85,3 +85,56 @@ jobs:
           name: mobile-photo-audit
           path: mobile-vendeglatas.png
           retention-days: 7
+
+      - name: Mobile navigation and interior page smoke test
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run start -- --port 3212 >/tmp/knowledge-route-audit.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
+          for i in $(seq 1 35); do
+            if curl -fsS http://127.0.0.1:3212/ >/dev/null; then break; fi
+            sleep 1
+          done
+          node - <<'NODE'
+          const {chromium}=require('playwright');
+          (async()=>{
+            const browser=await chromium.launch({headless:true});
+            const page=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:2,isMobile:true,hasTouch:true});
+            const routes=[
+              ['/',4],['/vendeglatas',4],['/matematika',2],
+              ['/technologiak',4],['/iskolai-anyagok',8],
+              ['/beallitasok',0],['/iskolai-anyagok/osszekapcsolas',0],
+              ['/iskolai-anyagok/tanulok',0],['/iskolai-anyagok/vizsgak',0]
+            ];
+            const errors=[];
+            page.on('pageerror',error=>errors.push(error.message));
+            for(const [route,minTiles] of routes){
+              const response=await page.goto('http://127.0.0.1:3212'+route,{waitUntil:'networkidle'});
+              const state=await page.evaluate(()=>({
+                scrollWidth:document.documentElement.scrollWidth,
+                viewport:document.documentElement.clientWidth,
+                tiles:[...document.querySelectorAll('.kh-tile-media')].map(el=>getComputedStyle(el).backgroundImage),
+                header:document.querySelector('.kh-photo-hero')?getComputedStyle(document.querySelector('.kh-photo-hero')).backgroundImage:null,
+                nav:document.querySelectorAll('.kh-tab').length
+              }));
+              console.log(JSON.stringify({route,http:response.status(),...state}));
+              if(response.status()!==200)throw Error(route+': bad HTTP '+response.status());
+              if(state.scrollWidth>state.viewport+2)throw Error(route+': horizontal overflow');
+              if(state.nav!==4)throw Error(route+': bottom navigation missing');
+              if(state.tiles.length<minTiles)throw Error(route+': missing photo tiles');
+              if(state.tiles.some(url=>!url.includes('/images/library/')))throw Error(route+': invalid photo URL');
+              if(route!=='/'&&(!state.header||!state.header.includes('/images/library/')))throw Error(route+': missing photo hero');
+            }
+            if(errors.length)throw Error('Client-side errors: '+errors.join('; '));
+            await page.screenshot({path:'mobile-last-interior.png',fullPage:true});
+            await browser.close();
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mobile-interior-audit
+          path: mobile-last-interior.png
+          retention-days: 7
