@@ -201,7 +201,7 @@ jobs:
             if(await page.getByText('MOTA Import',{exact:true}).count())throw Error('Legacy MOTA Import branding still visible');
             if(!await page.getByRole('navigation',{name:'Fő navigáció'}).isVisible())throw Error('Global navigation missing in importer');
             if(!await page.getByText('Részletes feldolgozási beállítások').isVisible())throw Error('Optional settings disclosure missing');
-            if(!await page.getByRole('heading',{name:'Képekből recept'}).isVisible())throw Error('Image-to-recipe section missing');
+            if(!await page.getByText('Képekből recept',{exact:true}).isVisible())throw Error('Image-to-recipe section missing');
             if(!await page.getByLabel('Receptképek kiválasztása').isVisible())throw Error('Image uploader missing');
             await page.screenshot({path:'mobile-unified-add.png',fullPage:true});
             await page.goto('http://127.0.0.1:3214/mota-import/gyujtemeny',{waitUntil:'domcontentloaded'});
