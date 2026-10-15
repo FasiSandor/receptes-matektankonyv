@@ -48,3 +48,20 @@
 .kh-root :is(input,select,textarea){accent-color:#168dff}
 .kh-root :is(button,a,input,select,textarea):focus-visible{outline:2px solid #45d8ff;outline-offset:3px}
 @media(max-width:560px){.kh-root{padding-left:12px;padding-right:12px}.kh-card,.kh-tile{border-radius:18px}}
+
+/* High-contrast vivid design accents – mobile navigation and all knowledge sections */
+.kh-root:not(.light){--bg:#030913;--surface:#071628;--card:#0b203b;--line:#2766a3;--fg:#f7fbff;--sub:#bed5ed;--blue:#168eff;--cyan:#10e2ff}
+.kh-root:not(.light){background:radial-gradient(ellipse at 105% -12%,#123d72 0%,transparent 43%),#030913}
+.kh-root:not(.light) :is(.kh-card,.kh-recipe,.kh-tile,.kh-dialog){background:linear-gradient(145deg,#0e2c50 0%,#081527 100%);border-color:#24629b;box-shadow:inset 0 1px #ffffff14,0 9px 28px #0009}
+.kh-root:not(.light) :is(.kh-card,.kh-recipe,.kh-tile):hover{border-color:#26c9ff;box-shadow:0 0 24px #078ffc2c,0 10px 26px #0009}
+.kh-navbar{border-color:#1a75b7;background:#041326f5}
+.kh-tab{gap:5px;color:#b6cde4}
+.kh-tab svg{color:#8eb6d9;filter:none}
+.kh-tab.active{color:#61dbff}.kh-tab.active svg{color:#21c8ff;filter:drop-shadow(0 0 8px #119aff)}
+.kh-add-sheet>a{grid-template-columns:28px minmax(0,1fr);color:#40c9ff}
+.kh-add-sheet>a svg{grid-row:1 / span 2;align-self:center}
+.kh-root:not(.light) .kh-pill{background:#093a65;color:#87e9ff;border-color:#1d87c7}
+.kh-root:not(.light) .kh-btn{background:linear-gradient(135deg,#149efb,#075ae9);border:1px solid #6adaff;box-shadow:0 5px 20px #077ef95d}
+.kh-root:not(.light) .kh-btn.secondary{background:#0d3054;color:#a3e9ff;border-color:#2c82bc}
+.kh-root:not(.light) .kh-tile-title{color:#f8fcff}
+@media(max-width:600px){.kh-navbar{padding-top:11px}.kh-tab{min-height:57px}}

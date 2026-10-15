@@ -575,3 +575,10 @@
 .shell :is(button,a,input,textarea,select):focus-visible{outline:2px solid #55dcff;outline-offset:3px}
 @media(max-width:600px){.hero{padding:23px 16px}.hero h1{line-height:1.05}.shell{padding-left:12px;padding-right:12px}}
 @media(prefers-reduced-motion:reduce){.shell *{scroll-behavior:auto!important}}
+
+/* Saturated blue/cyan controls throughout the adding workflow */
+.shell{--purple:#0c94ff;--purple2:#24d8fa;--purple3:#a5efff;--soft:#098dff29;--line:#2a679b;--line2:#399cce;--text:#f9fcff}
+.shell .card,.shell .results,.shell .photoUpload{background:linear-gradient(135deg,#0d2a4a,#061628);border-color:#2c74ac}
+.shell .sourceActive,.shell .focusActive,.shell .actionActive{background:linear-gradient(135deg,#075bbf,#073564);border-color:#49d9ff;box-shadow:0 0 20px #008eff44}
+.shell .urlField{background:#061a31;border-color:#2f84bd}.shell .urlField:focus-within{border-color:#2cdbff}
+.shell .quickLinks a{color:#7cdeff;border-color:#297cad;background:#092d50}

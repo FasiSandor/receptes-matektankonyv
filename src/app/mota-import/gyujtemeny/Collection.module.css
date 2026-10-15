@@ -1132,3 +1132,15 @@
 @media(hover:hover){.card:hover{transform:translateY(-2px);box-shadow:0 15px 35px #0009,0 0 0 1px #178cff26}}
 @media(max-width:600px){.hero{border-radius:19px;padding:25px 18px;margin-top:5px}.hero h1{font-size:clamp(39px,11vw,58px)}}
 @media(prefers-reduced-motion:reduce){.card{transition:none}.card:hover{transform:none}}
+
+/* Crisp saturated catalogue presentation – no pale pastel controls */
+.shell{--panel:#07182c;--panel2:#0c294a;--line:#215c92;--line2:#2f8cce;--purple:#078fff;--purple2:#18d9fa;--purple3:#80edff;--muted:#b4cfe8;--text:#f6fbff}
+.shell .hero{border-color:#2a96d1}
+.shell .filter,.shell .quick,.shell .statusButton{background:#071d36;color:#d0eaff;border-color:#2874a8}
+.shell .filterActive,.shell .quickActive,.shell .statusActive{background:linear-gradient(130deg,#0076ea,#0052cf);border-color:#64dfff;color:white;box-shadow:0 0 18px #088eff62}
+.shell .card{background:linear-gradient(140deg,#0b2a4a,#061627);border-color:#2673ae}
+.shell .card:hover{border-color:#36d6ff;box-shadow:0 0 18px #0689f843}
+.shell .searchWrap{background:#061c35;border-color:#308ac6}.shell .searchWrap:focus-within{border-color:#19daff}
+.shell .tagRow b{background:#083e73;color:#9ceeff;border-color:#198ec8}
+.shell .importLink{background:linear-gradient(120deg,#059dff,#0958e8);border-color:#7eeaff}
+.shell .device,.shell .details{background:#071b31;border-color:#286b9c}
