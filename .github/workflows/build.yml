@@ -47,3 +47,41 @@ jobs:
           curl --fail --silent --show-error --output /tmp/knowledge-vendeglatas.html http://127.0.0.1:3210/vendeglatas
           test -s /tmp/knowledge-vendeglatas.html
           echo "Vendeglatas endpoint responds; photography assets all return HTTP 200"
+
+      - name: Install headless browser
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Mobile visual audit (actual pixels, not just build)
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run start -- --port 3211 >/tmp/mobile-audit-next.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
+          for i in $(seq 1 35); do
+            if curl -fsS http://127.0.0.1:3211/vendeglatas >/dev/null; then break; fi
+            sleep 1
+          done
+          node - <<'NODE'
+          const {chromium}=require('playwright');
+          (async()=>{
+            const browser=await chromium.launch({headless:true});
+            const page=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:2,isMobile:true,hasTouch:true});
+            const errors=[];
+            page.on('pageerror',error=>errors.push(error.message));
+            const response=await page.goto('http://127.0.0.1:3211/vendeglatas',{waitUntil:'networkidle'});
+            await page.screenshot({path:'mobile-vendeglatas.png',fullPage:true});
+            const result=await page.locator('.kh-tile-media').evaluateAll(els=>els.map(el=>({height:Math.round(el.getBoundingClientRect().height),width:Math.round(el.getBoundingClientRect().width),bg:getComputedStyle(el).backgroundImage})));
+            const hero=await page.locator('.kh-photo-hero').evaluate(el=>({height:Math.round(el.getBoundingClientRect().height),bg:getComputedStyle(el).backgroundImage}));
+            console.log(JSON.stringify({http:response.status(),cards:result,hero,errors},null,2));
+            if(response.status()!==200||result.length!==4||result.some(x=>x.height<50||x.height>260||!x.bg.includes('/images/library/'))||!hero.bg.includes('/images/library/')||errors.length)throw Error('Mobile rendering audit failed');
+            await browser.close();
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mobile-photo-audit
+          path: mobile-vendeglatas.png
+          retention-days: 7
