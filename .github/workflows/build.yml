@@ -194,12 +194,15 @@ jobs:
             await page.goto('http://127.0.0.1:3214/vendeglatas',{waitUntil:'networkidle'});
             await page.getByRole('button',{name:'Új anyag hozzáadása'}).click();
             if(!await page.getByRole('dialog',{name:'Új anyag hozzáadása'}).isVisible())throw Error('Global add sheet missing');
+            if(!await page.getByRole('link',{name:/Kép feltöltése/}).isVisible())throw Error('Image add option missing');
             await page.getByRole('link',{name:/Link beillesztése/}).click();
             await page.waitForURL('**/mota-import?mode=link');
             if(!await page.getByRole('heading',{name:'Új anyag hozzáadása'}).isVisible())throw Error('Unified import header missing');
             if(await page.getByText('MOTA Import',{exact:true}).count())throw Error('Legacy MOTA Import branding still visible');
             if(!await page.getByRole('navigation',{name:'Fő navigáció'}).isVisible())throw Error('Global navigation missing in importer');
             if(!await page.getByText('Részletes feldolgozási beállítások').isVisible())throw Error('Optional settings disclosure missing');
+            if(!await page.getByRole('heading',{name:'Képekből recept'}).isVisible())throw Error('Image-to-recipe section missing');
+            if(!await page.getByLabel('Receptképek kiválasztása').isVisible())throw Error('Image uploader missing');
             await page.screenshot({path:'mobile-unified-add.png',fullPage:true});
             await page.goto('http://127.0.0.1:3214/mota-import/gyujtemeny',{waitUntil:'domcontentloaded'});
             if(!await page.getByRole('heading',{name:'Forrástár'}).isVisible())throw Error('Source library header missing');
