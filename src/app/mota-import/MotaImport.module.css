@@ -1,16 +1,16 @@
 .shell{
-  --bg:#10151d;
-  --panel:#18202b;
-  --panel2:#1c2532;
+  --bg:#0b0f14;
+  --panel:#111827;
+  --panel2:#172033;
   --panel3:#222d3a;
   --text:#edf0f4;
   --muted:#aeb7c5;
   --muted2:#808b9b;
   --line:#344052;
   --line2:#435066;
-  --purple:#6c4cff;
-  --purple2:#8b63ff;
-  --purple3:#a98dff;
+  --purple:#3b82f6;
+  --purple2:#60a5fa;
+  --purple3:#93c5fd;
   --soft:rgba(108,76,255,.13);
   --green:#7de0b4;
   --red:#ff9b9f;
@@ -35,7 +35,7 @@
   background:
     radial-gradient(circle at 78% -8%,rgba(96,78,220,.17),transparent 28%),
     radial-gradient(circle at 8% 22%,rgba(64,112,170,.12),transparent 30%),
-    linear-gradient(180deg,#111821 0%,#141b25 48%,#10151d 100%);
+    linear-gradient(180deg,#111821 0%,#111827 48%,#0b0f14 100%);
 }
 .shell:after{
   content:"";
@@ -425,7 +425,7 @@
   border:1px solid #4d4f78;
   border-radius:999px;
   color:#ae9fff;
-  background:#18202b;
+  background:#111827;
   font-size:8px;
 }
 
@@ -442,13 +442,13 @@
   min-height:42px;
   padding:0 14px;
   border-radius:10px;
-  border:1px solid #7354ff;
+  border:1px solid #3b82f6;
   background:#2b2347;
   color:#cbbfff;
   font-size:11px;
   font-weight:800;
 }
-.openLibrary{color:#9f8cff;text-decoration:none;font-size:10px;font-weight:700}
+.openLibrary{color:#60a5fa;text-decoration:none;font-size:10px;font-weight:700}
 .saveBarBottom{margin-top:20px;padding-top:16px;border-top:1px solid var(--line)}
 
 .resultBlock{margin-top:22px;padding-top:18px;border-top:1px solid var(--line)}
@@ -526,7 +526,59 @@
   font-weight:750;
 }
 .catalogTags b:first-child{
-  border-color:#7662c8;
+  border-color:#3b82f6;
   background:#2a2445;
   color:#cfc4ff;
 }
+
+
+/* Knowledge Library integration — retain existing data features while sharing shell. */
+.shell{max-width:100%;width:100%;min-height:0;padding:0 0 64px;overflow:visible;background:#0b0f14;color:#f8fafc}
+.shell::before,.shell::after{display:none!important}
+.quickLinks{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0 20px}
+.quickLinks a{padding:10px 14px;border:1px solid #2a3445;border-radius:11px;background:#172033;color:#60a5fa;text-decoration:none;font-size:14px;font-weight:700}
+.quickLinks a:focus-visible{outline:2px solid #22d3ee}
+.summary{color:#9eacc3;font-size:14px;margin:0 0 18px}
+.shell button:focus-visible,.shell a:focus-visible{outline:2px solid #22d3ee;outline-offset:2px}
+
+
+/* Compact everyday flow: show link first; optional expert controls stay available. */
+.moreOptions{margin:10px 0 16px;padding:11px 13px;border:1px solid #2a3445;border-radius:12px;background:#111827}
+.moreOptions summary{cursor:pointer;color:#9eacc3;font-size:13px;font-weight:700;list-style-position:inside}
+.moreOptions[open]{border-color:#3b82f6}
+.moreOptions[open] summary{color:#60a5fa;margin-bottom:14px}
+
+.savedNext{display:grid;gap:9px;margin:20px 0;padding:16px;border-radius:16px;background:#10243b;border:1px solid #3b82f6;color:#e2f0ff}
+.savedNext strong{color:#22c55e;font-size:16px}
+.savedNext p{color:#cbd5e1;font-size:13px;line-height:1.5;margin:0}
+.savedNext a{padding:11px 13px;border:1px solid #2a3445;background:#172033;border-radius:10px;color:#60a5fa;text-decoration:none;font-size:14px;font-weight:700}
+
+.photoUpload{display:grid;gap:12px;margin:18px 0;padding:17px;border-radius:16px;border:1px solid #2a3445;background:#172033;color:#f8fafc}
+.photoUpload strong{font-size:16px}
+.photoUpload p{margin:0;font-size:13px;line-height:1.6;color:#aab9d0}
+.photoUpload input{max-width:100%;color:#e2e8f0;font-size:14px}
+.photoUpload:target{border-color:#3b82f6}
+
+/* Premium photographic dark-tech treatment for import / source processing workspace. */
+.shell{--bg:#06101e;--panel:#0a1e33;--panel2:#102a45;--panel3:#153657;--text:#f2f9ff;--muted:#a5bfd8;--muted2:#81a4c7;--line:#2e5b86;--line2:#397eb1;--purple:#1894ff;--purple2:#43c8ff;--purple3:#a0ebff;--soft:#168dff21;color:var(--text)}
+.shell::before,.shell::after{display:none!important}
+.header{border-color:#305e88}.brand{color:#f5faff}.brandIcon{border:1px solid #319bdb;box-shadow:0 0 23px #168dff55}
+.hero{position:relative;padding:28px 20px 27px;margin:14px 0 22px;border:1px solid #3777a6;border-radius:21px;background:linear-gradient(90deg,#061426f2,#07162dc0 74%,#07162d70),url("/images/library/studio.jpg") center/cover;box-shadow:0 13px 40px #0009}
+.hero h1{font-size:clamp(35px,8vw,59px);color:#f7fbff;text-shadow:0 3px 17px #000b}.heroAccent{color:#4ccaff;text-shadow:0 0 27px #058bff88}
+.hero p{color:#e0efff;font-size:clamp(14px,3vw,17px);text-shadow:0 2px 10px #000b}.heroKicker{color:#71dbff}
+.card,.results,.photoUpload,.savedNext,.moreOptions{background:linear-gradient(150deg,#102d49,#081c30);border-color:#30638d;border-radius:18px;box-shadow:0 12px 30px #0005}
+.urlField,.sourceButton,.focus,.action,.quickLinks a{background:#081d32;border-color:#36648c;color:#c7e6ff}
+.urlField:focus-within{border-color:#42caff;box-shadow:0 0 0 3px #178cff2b}
+.sourceActive,.actionActive,.focusActive{border-color:#45bfff;background:linear-gradient(130deg,#1157a9,#0b3265);box-shadow:0 5px 19px #0b8fff33;color:#fff}
+.actionIcon,.folderIcon,.linkGlyph{color:#50caff}.detectedSource{color:#6cddff}
+.libraryLink{background:linear-gradient(130deg,#102e4b,#0b1c2f);border-color:#3279b8}.libraryLink i{color:#6cdaff}
+.shell :is(button,a,input,textarea,select):focus-visible{outline:2px solid #55dcff;outline-offset:3px}
+@media(max-width:600px){.hero{padding:23px 16px}.hero h1{line-height:1.05}.shell{padding-left:12px;padding-right:12px}}
+@media(prefers-reduced-motion:reduce){.shell *{scroll-behavior:auto!important}}
+
+/* Saturated blue/cyan controls throughout the adding workflow */
+.shell{--purple:#0c94ff;--purple2:#24d8fa;--purple3:#a5efff;--soft:#098dff29;--line:#2a679b;--line2:#399cce;--text:#f9fcff}
+.shell .card,.shell .results,.shell .photoUpload{background:linear-gradient(135deg,#0d2a4a,#061628);border-color:#2c74ac}
+.shell .sourceActive,.shell .focusActive,.shell .actionActive{background:linear-gradient(135deg,#075bbf,#073564);border-color:#49d9ff;box-shadow:0 0 20px #008eff44}
+.shell .urlField{background:#061a31;border-color:#2f84bd}.shell .urlField:focus-within{border-color:#2cdbff}
+.shell .quickLinks a{color:#7cdeff;border-color:#297cad;background:#092d50}

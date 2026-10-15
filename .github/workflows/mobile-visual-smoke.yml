@@ -1,0 +1,61 @@
+name: Mobile visual smoke test (no Vercel)
+on:
+  workflow_dispatch:
+  push:
+    branches: [feature/secure-school-link-20261014]
+    paths:
+      - '.github/workflows/mobile-visual-smoke.yml'
+      - 'src/components/KnowledgeShell.tsx'
+      - 'src/components/PhotoHero.tsx'
+      - 'src/components/knowledge.css'
+      - 'public/images/library/**'
+jobs:
+  screenshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: '1'
+      - run: npm install --no-save playwright
+      - run: npx playwright install --with-deps chromium
+      - name: Verify visible photos in mobile Chromium and capture evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run start -- --port 3210 >/tmp/next-visual.log 2>&1 &
+          trap 'kill $! 2>/dev/null || true' EXIT
+          for i in $(seq 1 40); do
+            if curl -fsS http://127.0.0.1:3210/vendeglatas >/dev/null; then break; fi
+            sleep 1
+          done
+          node - <<'NODE'
+          const {chromium}=require('playwright');
+          (async()=>{
+            const browser=await chromium.launch({headless:true});
+            const page=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:2,isMobile:true,hasTouch:true});
+            const errors=[];
+            page.on('pageerror',e=>errors.push(e.message));
+            await page.goto('http://127.0.0.1:3210/vendeglatas',{waitUntil:'networkidle'});
+            await page.screenshot({path:'mobile-vendeglatas.png',fullPage:true});
+            const tiles=await page.locator('.kh-tile-media').evaluateAll(els=>els.map(el=>({width:Math.round(el.getBoundingClientRect().width),height:Math.round(el.getBoundingClientRect().height),bg:getComputedStyle(el).backgroundImage})));
+            const hero=await page.locator('.kh-photo-hero').evaluate(el=>({height:Math.round(el.getBoundingClientRect().height),bg:getComputedStyle(el).backgroundImage}));
+            console.log(JSON.stringify({tiles,hero,errors},null,2));
+            if(tiles.length!==4)throw Error('Expected four food photo cards, got '+tiles.length);
+            if(tiles.some(t=>t.height<50||t.height>260||!t.bg.includes('/images/library/')))throw Error('Card background or mobile dimensions invalid');
+            if(hero.height>260||!hero.bg.includes('/images/library/'))throw Error('Photo hero invalid');
+            if(errors.length)throw Error('Client page error: '+errors.join('; '));
+            await browser.close();
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mobile-vendeglatas-screenshot
+          path: mobile-vendeglatas.png
+          retention-days: 7

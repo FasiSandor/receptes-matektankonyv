@@ -1,0 +1,22 @@
+{
+  "name": "Tudáskönyvtár",
+  "short_name": "Tudástár",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#06101e",
+  "theme_color": "#06101e",
+  "icons": [
+    {
+      "src": "/icon",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/app-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

@@ -12,5 +12,236 @@ jobs:
         with:
           node-version: '22'
       - run: npm install --no-audit --no-fund
+      - name: Validate bundled JPEG photos for deployment
+        run: |
+          node - <<'NODE'
+          const fs=require('node:fs');
+          const names=['recipe','technology','sources','studio','main','starter','dessert','math','school','students','planning'];
+          for(const name of names){
+            const path=`public/images/library/${name}.jpg`;
+            if(!fs.existsSync(path))throw new Error('Missing: '+path);
+            const data=fs.readFileSync(path);
+            if(data.length<8000 || data[0]!==0xff || data[1]!==0xd8 || data.at(-2)!==0xff || data.at(-1)!==0xd9)throw new Error('Invalid JPEG: '+path);
+            process.stdout.write(name+': '+data.length+' bytes, valid JPEG\\n');
+          }
+          NODE
+      - name: School pairing cryptographic contract tests
+        shell: bash
+        run: |
+          node - <<'NODE'
+          const fs=require('node:fs'),ts=require('typescript'),vm=require('node:vm');
+          const crypto=require('node:crypto');
+          const src=fs.readFileSync('src/lib/school-link.ts','utf8');
+          const js=ts.transpileModule(src,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
+          const secret='CI-only-school-link-secret-abcdefghijklmnopqrstuvwxyz';
+          const exports={}; const module={exports};
+          const context={exports,module,Buffer,process:{env:{SCHOOL_LINK_SECRET:secret}},Date,require:(name)=>{
+            if(name==='node:crypto')return crypto;
+            if(name==='next/headers')return {cookies:async()=>({get:()=>undefined})};
+            throw Error('Unexpected import: '+name);
+          }};
+          vm.runInNewContext(js,context);
+          const lib=module.exports;
+          const owner='teacher-owner-ci-test';
+          function token(override={}){
+            const payload={v:1,aud:'receptes-matektankonyv',sub:owner,exp:Date.now()+240000,nonce:crypto.randomBytes(16).toString('hex'),...override};
+            const raw=Buffer.from(JSON.stringify(payload)).toString('base64url');
+            return raw+'.'+crypto.createHmac('sha256',secret).update(raw).digest('base64url');
+          }
+          const valid=token();
+          if(!lib.schoolLinkReady()||lib.validateLinkCode(valid)?.owner!==owner)throw Error('Valid teacher code rejected');
+          if(lib.validateLinkCode(valid+'x')!==null)throw Error('Tampered signature accepted');
+          if(lib.validateLinkCode(token({aud:'wrong-app'}))!==null)throw Error('Wrong audience accepted');
+          if(lib.validateLinkCode(token({exp:Date.now()-1000}))!==null)throw Error('Expired code accepted');
+          if(lib.validateLinkCode(token({exp:Date.now()+600000}))!==null)throw Error('Too-long lifetime accepted');
+          if(lib.validateLinkCode(token({nonce:'bad'}))!==null)throw Error('Malformed nonce accepted');
+          if(lib.validateLinkCode('x'.repeat(4097))!==null)throw Error('Oversized token accepted');
+          const cookie=lib.issueSchoolCookie(owner);
+          if(cookie.split('.').length!==2)throw Error('Link cookie format invalid');
+          console.log('School code signing, audience, expiry, tampering, nonce, length and cookie: OK');
+          NODE
       - run: npm run lint
       - run: npm run build
+
+      - name: Smoke-test production server and local photo URLs
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run start -- --port 3210 >/tmp/knowledge-next.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
+          for i in $(seq 1 35); do
+            if curl --silent --fail http://127.0.0.1:3210/ >/dev/null; then break; fi
+            sleep 1
+          done
+          for name in recipe technology sources studio main starter dessert math school students planning; do
+            curl --fail --silent --show-error --output "/tmp/${name}.jpg" "http://127.0.0.1:3210/images/library/${name}.jpg"
+            file "/tmp/${name}.jpg" | grep -qi 'JPEG image data'
+            echo "HTTP 200, JPEG: ${name}"
+          done
+          curl --fail --silent --show-error --output /tmp/knowledge-vendeglatas.html http://127.0.0.1:3210/vendeglatas
+          test -s /tmp/knowledge-vendeglatas.html
+          echo "Vendeglatas endpoint responds; photography assets all return HTTP 200"
+
+      - name: Install headless browser
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Mobile visual audit (actual pixels, not just build)
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run start -- --port 3211 >/tmp/mobile-audit-next.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
+          for i in $(seq 1 35); do
+            if curl -fsS http://127.0.0.1:3211/vendeglatas >/dev/null; then break; fi
+            sleep 1
+          done
+          node - <<'NODE'
+          const {chromium}=require('playwright');
+          (async()=>{
+            const browser=await chromium.launch({headless:true});
+            const page=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:2,isMobile:true,hasTouch:true});
+            const errors=[];
+            page.on('pageerror',error=>errors.push(error.message));
+            const response=await page.goto('http://127.0.0.1:3211/vendeglatas',{waitUntil:'networkidle'});
+            await page.screenshot({path:'mobile-vendeglatas.png',fullPage:true});
+            const result=await page.locator('.kh-tile-media').evaluateAll(els=>els.map(el=>({height:Math.round(el.getBoundingClientRect().height),width:Math.round(el.getBoundingClientRect().width),bg:getComputedStyle(el).backgroundImage})));
+            const hero=await page.locator('.kh-photo-hero').evaluate(el=>({height:Math.round(el.getBoundingClientRect().height),bg:getComputedStyle(el).backgroundImage}));
+            console.log(JSON.stringify({http:response.status(),cards:result,hero,errors},null,2));
+            if(response.status()!==200||result.length!==4||result.some(x=>x.height<50||x.height>260||!x.bg.includes('/images/library/'))||!hero.bg.includes('/images/library/')||errors.length)throw Error('Mobile rendering audit failed');
+            await browser.close();
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mobile-photo-audit
+          path: mobile-vendeglatas.png
+          retention-days: 7
+
+      - name: Mobile navigation and interior page smoke test
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run start -- --port 3212 >/tmp/knowledge-route-audit.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
+          for i in $(seq 1 35); do
+            if curl -fsS http://127.0.0.1:3212/ >/dev/null; then break; fi
+            sleep 1
+          done
+          node - <<'NODE'
+          const {chromium}=require('playwright');
+          (async()=>{
+            const browser=await chromium.launch({headless:true});
+            const page=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:2,isMobile:true,hasTouch:true});
+            const routes=[
+              ['/',4],['/vendeglatas',4],['/matematika',2],
+              ['/technologiak',4],['/iskolai-anyagok',8],
+              ['/beallitasok',0],['/iskolai-anyagok/osszekapcsolas',0],
+              ['/iskolai-anyagok/tanulok',0],['/iskolai-anyagok/vizsgak',0]
+            ];
+            const errors=[];
+            page.on('pageerror',error=>errors.push(error.message));
+            for(const [route,minTiles] of routes){
+              const response=await page.goto('http://127.0.0.1:3212'+route,{waitUntil:'networkidle'});
+              const state=await page.evaluate(()=>({
+                scrollWidth:document.documentElement.scrollWidth,
+                viewport:document.documentElement.clientWidth,
+                tiles:[...document.querySelectorAll('.kh-tile-media')].map(el=>getComputedStyle(el).backgroundImage),
+                header:document.querySelector('.kh-photo-hero')?getComputedStyle(document.querySelector('.kh-photo-hero')).backgroundImage:null,
+                nav:document.querySelectorAll('.kh-tab').length
+              }));
+              console.log(JSON.stringify({route,http:response.status(),...state}));
+              if(response.status()!==200)throw Error(route+': bad HTTP '+response.status());
+              if(state.scrollWidth>state.viewport+2)throw Error(route+': horizontal overflow');
+              if(state.nav!==4)throw Error(route+': bottom navigation missing');
+              if(state.tiles.length<minTiles)throw Error(route+': missing photo tiles');
+              if(state.tiles.some(url=>!url.includes('/images/library/')))throw Error(route+': invalid photo URL');
+              if(route!=='/'&&(!state.header||!state.header.includes('/images/library/')))throw Error(route+': missing photo hero');
+            }
+            if(errors.length)throw Error('Client-side errors: '+errors.join('; '));
+            await page.screenshot({path:'mobile-last-interior.png',fullPage:true});
+            await browser.close();
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mobile-interior-audit
+          path: mobile-last-interior.png
+          retention-days: 7
+
+
+      - name: Unified add and library navigation visual smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run start -- --port 3214 >/tmp/knowledge-add.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
+          for i in $(seq 1 35); do
+            if curl -fsS http://127.0.0.1:3214/vendeglatas >/dev/null; then break; fi
+            sleep 1
+          done
+          node - <<'NODE'
+          const {chromium}=require('playwright');
+          (async()=>{
+            const browser=await chromium.launch({headless:true});
+            const page=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:2,isMobile:true,hasTouch:true});
+            await page.goto('http://127.0.0.1:3214/vendeglatas',{waitUntil:'networkidle'});
+            await page.getByRole('button',{name:'Új anyag hozzáadása'}).click();
+            if(!await page.getByRole('dialog',{name:'Új anyag hozzáadása'}).isVisible())throw Error('Global add sheet missing');
+            if(!await page.getByRole('link',{name:/Kép feltöltése/}).isVisible())throw Error('Image add option missing');
+            await page.getByRole('link',{name:/Link beillesztése/}).click();
+            await page.waitForURL('**/mota-import?mode=link');
+            if(!await page.getByRole('heading',{name:'Új anyag hozzáadása'}).isVisible())throw Error('Unified import header missing');
+            if(await page.getByText('MOTA Import',{exact:true}).count())throw Error('Legacy MOTA Import branding still visible');
+            if(!await page.getByRole('navigation',{name:'Fő navigáció'}).isVisible())throw Error('Global navigation missing in importer');
+            if(!await page.getByText('Részletes feldolgozási beállítások').isVisible())throw Error('Optional settings disclosure missing');
+            if(!await page.getByText('Képekből recept',{exact:true}).isVisible())throw Error('Image-to-recipe section missing');
+            if(!await page.getByLabel('Receptképek kiválasztása').isVisible())throw Error('Image uploader missing');
+            await page.screenshot({path:'mobile-unified-add.png',fullPage:true});
+            await page.goto('http://127.0.0.1:3214/mota-import/gyujtemeny',{waitUntil:'domcontentloaded'});
+            if(!await page.getByRole('heading',{name:'Forrástár'}).isVisible())throw Error('Source library header missing');
+            if(!await page.getByRole('navigation',{name:'Fő navigáció'}).isVisible())throw Error('Global navigation missing in source library');
+            console.log('Unified add, import and source library mobile routes: PASS');
+            await browser.close();
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mobile-unified-add
+          path: mobile-unified-add.png
+          retention-days: 7
+      - name: School integration security regression (unauthenticated, no writes)
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run start -- --port 3213 >/tmp/knowledge-security.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
+          for i in $(seq 1 35); do
+            if curl -fsS http://127.0.0.1:3213/ >/dev/null; then break; fi
+            sleep 1
+          done
+          node - <<'NODE'
+          (async()=>{
+            const root='http://127.0.0.1:3213';
+            const paths=['/api/iskolai/tanulok','/api/iskolai/vizsgak','/api/school-integration/status','/api/iskolai/osszekapcsolas'];
+            for(const path of paths){
+              const response=await fetch(root+path,{redirect:'manual'});
+              const body=await response.json();
+              console.log('unauth GET',path,response.status);
+              if(response.status!==401||!body.error||JSON.stringify(body).includes('student_name')||JSON.stringify(body).includes('owner_id'))throw Error('Unauthenticated access regression: '+path);
+            }
+            for(const method of ['POST','DELETE']){
+              const response=await fetch(root+'/api/iskolai/osszekapcsolas',{method,headers:{origin:'https://attacker.example','Content-Type':'application/json'},body:method==='POST'?JSON.stringify({code:'fake'}):undefined,redirect:'manual'});
+              console.log('cross-origin',method,response.status);
+              if(response.status!==403)throw Error('CSRF protection regression for '+method);
+            }
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE

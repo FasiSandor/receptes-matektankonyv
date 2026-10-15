@@ -1,6 +1,7 @@
 "use client";
 import {useEffect,useMemo,useState} from "react";
 import Link from "next/link";
+import KnowledgeShell from "@/components/KnowledgeShell";
 import {listLibraryItems,saveLibraryResult,updateLibraryItem,createLibraryVideoUrl,type LibraryItem} from "../mota-import/library";
 
 type Subject="matematika"|"gasztronomia";
@@ -65,9 +66,9 @@ export default function SharedVideoLibrary(){
   const signed=await createLibraryVideoUrl(item.video_path);
   if(signed)setPlayUrl(signed);else{setMsg("A tárolt videó nem érhető el. Az eredeti forrást megnyithatod.");window.open(item.source_url,"_blank","noopener,noreferrer")}
  }
- return <main style={{background:colors.bg,color:"#f8fafc",minHeight:"100vh",padding:"22px 16px 60px",fontFamily:"system-ui,-apple-system,sans-serif"}}>
+ return <KnowledgeShell><main className="kh-video-workspace" style={{background:colors.bg,color:"#f8fafc",minHeight:"100vh",padding:"22px 16px 60px",fontFamily:"system-ui,-apple-system,sans-serif"}}>
  <div style={{maxWidth:1000,margin:"0 auto"}}>
- <Link href="/" style={{color:colors.blue,fontWeight:700,textDecoration:"none"}}>← Receptes és Matektankönyv</Link>
+ <Link href="/matematika" style={{color:colors.blue,fontWeight:700,textDecoration:"none"}}>← Matematika főoldalra</Link>
  <header style={{margin:"22px 0"}}><div style={{color:"#22d3ee",fontSize:12,fontWeight:800,letterSpacing:2}}>KÖZÖS MÉDIATÁR</div><h1 style={{fontSize:"clamp(27px,5vw,40px)",margin:"8px 0"}}>Videókönyvtár</h1><p style={{color:colors.muted,lineHeight:1.55}}>Gasztronómiai és matematikai videók egy helyen. A matekos videók önálló tananyag-kiegészítők is lehetnek, nem kell tanmenethez kapcsolni őket.</p></header>
  <div style={{display:"flex",gap:8,marginBottom:18}}>
  {([["matematika","∑ Matematika"],["gasztronomia","♨ Gasztronómia"]] as const).map(([id,label])=><button key={id} type="button" onClick={()=>{setSubject(id);setMsg("")}} style={{...btn,flex:1,background:subject===id?"#2563eb":"#172033",border:subject===id?"1px solid #60a5fa":"1px solid #334155"}}>{label}</button>)}
@@ -97,5 +98,5 @@ export default function SharedVideoLibrary(){
  </div></article>)}</div>}
  {playUrl&&<div role="dialog" aria-label="Mentett videó" style={{position:"fixed",inset:0,background:"rgba(0,0,0,.92)",zIndex:50,display:"grid",placeItems:"center",padding:16}}><div style={{width:"min(96vw,800px)"}}><button style={{...btn,marginBottom:10}} onClick={()=>setPlayUrl("")}>Bezárás ×</button><video src={playUrl} controls autoPlay playsInline style={{width:"100%",maxHeight:"75vh"}}/></div></div>}
  <p style={{color:colors.muted,marginTop:26,fontSize:12}}>Megjegyzés: a videó elmentett hivatkozása nem bizonyítja, hogy maga a fájl letöltődött. A nem hozzáférhető Facebook-videók automatikus letöltése továbbra is korlátozott.</p>
- </div></main>;
+ </div></main></KnowledgeShell>;
 }

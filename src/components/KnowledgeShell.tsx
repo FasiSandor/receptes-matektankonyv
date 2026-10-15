@@ -1,24 +1,17 @@
 "use client";
 import Link from "next/link";
-import {usePathname} from "next/navigation";
+import {usePathname,useRouter} from "next/navigation";
 import {useEffect,useState} from "react";
+import {Home,ChefHat,Calculator,Settings,Link2,Video,Image as ImageIcon,Library} from "lucide-react";
 import "./knowledge.css";
-export const foodPics={
-recipe:"https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=900&q=82",
-technology:"https://images.unsplash.com/photo-1577219491135-ce391730fb2c?w=900&q=82",
-sources:"https://images.unsplash.com/photo-1556911220-bff31c812dba?w=900&q=82",
-studio:"https://images.unsplash.com/photo-1547592180-85f173990554?w=900&q=82",
-soup:"https://images.unsplash.com/photo-1547592180-85f173990554?w=900&q=82",
-main:"https://images.unsplash.com/photo-1544025162-d76694265947?w=900&q=82",
-starter:"https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=900&q=82",
-dessert:"https://images.unsplash.com/photo-1488477181946-6428a0291777?w=900&q=82"
-};
+export {foodPics} from "@/lib/knowledge-images";
 export function Tile({href,title,subtitle,image}:{href:string;title:string;subtitle:string;image:string}){
-return <Link className="kh-tile" href={href}><img src={image} alt=""/><div className="kh-tile-body"><div className="kh-tile-title">{title}</div><div className="kh-muted" style={{marginTop:6}}>{subtitle}</div></div></Link>}
+return <Link className="kh-tile" href={href}><div className="kh-tile-media" style={{backgroundImage:`url("${image}")`}} aria-hidden="true"/><div className="kh-tile-body"><div className="kh-tile-title">{title}</div><div className="kh-muted" style={{marginTop:6}}>{subtitle}</div></div></Link>}
 export default function KnowledgeShell({children}:{children:React.ReactNode}){
-const pathname=usePathname();const [theme,setTheme]=useState("dark");
+const pathname=usePathname();const router=useRouter();const [adding,setAdding]=useState(false);const [theme,setTheme]=useState("dark");
 useEffect(()=>{setTheme(localStorage.getItem("tudastar-theme")==="light"?"light":"dark")},[]);
 useEffect(()=>{const handler=(e:Event)=>{const val=(e as CustomEvent).detail;setTheme(val==="light"?"light":"dark")};window.addEventListener("kh-theme",handler);return()=>window.removeEventListener("kh-theme",handler)},[]);
-const active=pathname.startsWith("/vendeglatas")||pathname.startsWith("/recepttar")||pathname.startsWith("/mota-import")?"food":pathname.startsWith("/matematika")?"math":pathname.startsWith("/beallitasok")?"settings":"home";
-const tabs=[["home","/","⌂","Főoldal"],["food","/vendeglatas","♨","Vendéglátás"],["math","/matematika","∑","Matematika"],["settings","/beallitasok","⚙","Beállítások"]];
-return <div className={"kh-root "+(theme==="light"?"light":"dark")}><nav className="kh-navbar" aria-label="Fő navigáció">{tabs.map(([id,href,ico,label])=><Link key={id} href={href} className={"kh-tab "+(id===active?"active":"")} aria-current={id===active?"page":undefined}><span aria-hidden>{ico}</span>{label}</Link>)}</nav><div className="kh-content">{children}</div><Link className="kh-fab" href="/#hozzaadas" aria-label="Intelligens hozzáadás">+</Link></div>}
+useEffect(()=>{let x=0,y=0,edge=false;const start=(e:TouchEvent)=>{if(e.touches.length!==1)return;x=e.touches[0].clientX;y=e.touches[0].clientY;edge=x<28};const end=(e:TouchEvent)=>{if(!edge||e.changedTouches.length!==1)return;edge=false;const dx=e.changedTouches[0].clientX-x,dy=Math.abs(e.changedTouches[0].clientY-y);if(dx>95&&dy<65&&dx>dy*1.6&&pathname!=="/"){if(history.length>1)router.back();else router.push("/")}};window.addEventListener("touchstart",start,{passive:true});window.addEventListener("touchend",end,{passive:true});return()=>{window.removeEventListener("touchstart",start);window.removeEventListener("touchend",end)}},[pathname,router]);const active=pathname.startsWith("/vendeglatas")||pathname.startsWith("/recepttar")||pathname.startsWith("/mota-import")||pathname.startsWith("/hozzaadas")||pathname.startsWith("/technologiak")?"food":pathname.startsWith("/matematika")||pathname.startsWith("/videotar")?"math":pathname.startsWith("/beallitasok")?"settings":"home";
+const tabs=[["home","/","Főoldal"],["food","/vendeglatas","Vendéglátás"],["math","/matematika","Matematika"],["settings","/beallitasok","Beállítások"]];
+const tabIcons={home:Home,food:ChefHat,math:Calculator,settings:Settings};
+return <div className={"kh-root "+(theme==="light"?"light":"dark")}><nav className="kh-navbar" aria-label="Fő navigáció">{tabs.map(([id,href,label])=>{const Icon=tabIcons[id as keyof typeof tabIcons];return <Link key={id} href={href} className={"kh-tab "+(id===active?"active":"")} aria-current={id===active?"page":undefined}><Icon aria-hidden="true" size={24} strokeWidth={id===active?2.6:1.9}/>{label}</Link>})}</nav><div className="kh-content">{children}</div><button type="button" className="kh-fab" onClick={()=>setAdding(true)} aria-label="Új anyag hozzáadása" aria-haspopup="dialog">+</button>{adding&&<div className="kh-add-overlay" onClick={()=>setAdding(false)}><section role="dialog" aria-modal="true" aria-label="Új anyag hozzáadása" className="kh-add-sheet" onClick={e=>e.stopPropagation()}><div className="kh-add-heading"><h2>Új anyag hozzáadása</h2><button onClick={()=>setAdding(false)} aria-label="Bezárás">×</button></div><p>Honnan szeretnél új receptet vagy szakmai anyagot hozzáadni?</p><Link href="/mota-import?mode=link" onClick={()=>setAdding(false)}><Link2 size={24} aria-hidden="true"/> <strong>Link beillesztése</strong><span>Videó vagy recept hivatkozása</span></Link><Link href="/mota-import?mode=video" onClick={()=>setAdding(false)}><Video size={24} aria-hidden="true"/> <strong>Videó feltöltése</strong><span>Fájl elemzése és feldolgozása</span></Link><Link href="/mota-import?mode=image" onClick={()=>setAdding(false)}><ImageIcon size={24} aria-hidden="true"/> <strong>Kép feltöltése</strong><span>Receptfotók, képernyőképek feldolgozása</span></Link><Link href="/mota-import/gyujtemeny" onClick={()=>setAdding(false)}><Library size={24} aria-hidden="true"/> <strong>Forrástár megnyitása</strong><span>Mentett források és ellenőrzés</span></Link></section></div>}</div>}
