@@ -1122,3 +1122,13 @@
 .device{background:#091c30;border-color:#2b5c86}.deviceIcon{background:#123e66;border-color:#2878b5;color:#49caff}
 .shell :is(button,a,input,textarea,select):focus-visible{outline:2px solid #4cdaff;outline-offset:3px}
 @media(max-width:580px){.shell{padding-left:12px;padding-right:12px}.card{border-radius:17px}.searchWrap{min-height:55px}}
+
+/* Carefully placed local photography: only the catalogue hero uses a full photo. */
+.hero{position:relative;isolation:isolate;overflow:hidden;border:1px solid #3875a1;border-radius:22px;padding:34px 23px 30px;margin:13px 0 18px;background:#0b253d url("/images/library/sources.jpg") center 45%/cover no-repeat;box-shadow:0 20px 48px #0009}
+.hero::before{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,rgba(3,11,24,.95),rgba(5,17,34,.78) 65%,rgba(5,18,36,.38))}
+.hero h1,.hero p,.hero .kicker{position:relative;z-index:1;text-shadow:0 2px 12px #000b}
+.hero p{max-width:570px;color:#deeeff}
+.card{transition:border-color .2s ease,transform .2s ease,box-shadow .2s ease}
+@media(hover:hover){.card:hover{transform:translateY(-2px);box-shadow:0 15px 35px #0009,0 0 0 1px #178cff26}}
+@media(max-width:600px){.hero{border-radius:19px;padding:25px 18px;margin-top:5px}.hero h1{font-size:clamp(39px,11vw,58px)}}
+@media(prefers-reduced-motion:reduce){.card{transition:none}.card:hover{transform:none}}
