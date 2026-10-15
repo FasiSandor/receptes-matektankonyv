@@ -44,7 +44,7 @@ jobs:
           const lib=module.exports;
           const owner='teacher-owner-ci-test';
           function token(override={}){
-            const payload={v:1,aud:'receptes-matektankonyv',sub:owner,exp:Date.now()+300000,nonce:crypto.randomBytes(16).toString('hex'),...override};
+            const payload={v:1,aud:'receptes-matektankonyv',sub:owner,exp:Date.now()+240000,nonce:crypto.randomBytes(16).toString('hex'),...override};
             const raw=Buffer.from(JSON.stringify(payload)).toString('base64url');
             return raw+'.'+crypto.createHmac('sha256',secret).update(raw).digest('base64url');
           }
