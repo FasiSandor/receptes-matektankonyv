@@ -1,4 +1,1 @@
-import type { Metadata } from "next";
-import "./globals.css";
-export const metadata: Metadata = { title: "Receptes és Matektankönyv", description: "Intelligens multimédiás tudástár, Gasztro Stúdió és matematikai tankönyv." };
-export default function RootLayout({children}:{children:React.ReactNode}) { return <html lang="hu"><body>{children}</body></html> }
+import type {Metadata,Viewport} from "next";import "./globals.css";export const metadata:Metadata={title:"Tudáskönyvtár",description:"Források, receptek és tananyagok egy helyen",applicationName:"Tudáskönyvtár",manifest:"/manifest.webmanifest",icons:{icon:"/app-icon.svg"}};export const viewport:Viewport={width:"device-width",initialScale:1,viewportFit:"cover",themeColor:"#06101e"};export default function RootLayout({children}:{children:React.ReactNode}){return <html lang="hu"><body>{children}</body></html>}
