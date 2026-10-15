@@ -1,16 +1,16 @@
 .shell{
-  --bg:#10151d;
-  --panel:#18202b;
-  --panel2:#1c2532;
+  --bg:#0b0f14;
+  --panel:#111827;
+  --panel2:#172033;
   --panel3:#222d3a;
   --text:#edf0f4;
   --muted:#aeb7c5;
   --muted2:#808b9b;
   --line:#344052;
   --line2:#435066;
-  --purple:#6c4cff;
-  --purple2:#8b63ff;
-  --purple3:#a98dff;
+  --purple:#3b82f6;
+  --purple2:#60a5fa;
+  --purple3:#93c5fd;
   --soft:rgba(108,76,255,.13);
   --green:#7de0b4;
   --red:#ff9b9f;
@@ -35,7 +35,7 @@
   background:
     radial-gradient(circle at 78% -8%,rgba(96,78,220,.17),transparent 28%),
     radial-gradient(circle at 8% 22%,rgba(64,112,170,.12),transparent 30%),
-    linear-gradient(180deg,#111821 0%,#141b25 48%,#10151d 100%);
+    linear-gradient(180deg,#111821 0%,#111827 48%,#0b0f14 100%);
 }
 .shell:after{
   content:"";
@@ -425,7 +425,7 @@
   border:1px solid #4d4f78;
   border-radius:999px;
   color:#ae9fff;
-  background:#18202b;
+  background:#111827;
   font-size:8px;
 }
 
@@ -442,13 +442,13 @@
   min-height:42px;
   padding:0 14px;
   border-radius:10px;
-  border:1px solid #7354ff;
+  border:1px solid #3b82f6;
   background:#2b2347;
   color:#cbbfff;
   font-size:11px;
   font-weight:800;
 }
-.openLibrary{color:#9f8cff;text-decoration:none;font-size:10px;font-weight:700}
+.openLibrary{color:#60a5fa;text-decoration:none;font-size:10px;font-weight:700}
 .saveBarBottom{margin-top:20px;padding-top:16px;border-top:1px solid var(--line)}
 
 .resultBlock{margin-top:22px;padding-top:18px;border-top:1px solid var(--line)}
@@ -526,7 +526,17 @@
   font-weight:750;
 }
 .catalogTags b:first-child{
-  border-color:#7662c8;
+  border-color:#3b82f6;
   background:#2a2445;
   color:#cfc4ff;
 }
+
+
+/* Knowledge Library integration — retain existing data features while sharing shell. */
+.shell{max-width:100%;width:100%;min-height:0;padding:0 0 64px;overflow:visible;background:#0b0f14;color:#f8fafc}
+.shell::before,.shell::after{display:none!important}
+.quickLinks{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0 20px}
+.quickLinks a{padding:10px 14px;border:1px solid #2a3445;border-radius:11px;background:#172033;color:#60a5fa;text-decoration:none;font-size:14px;font-weight:700}
+.quickLinks a:focus-visible{outline:2px solid #22d3ee}
+.summary{color:#9eacc3;font-size:14px;margin:0 0 18px}
+.shell button:focus-visible,.shell a:focus-visible{outline:2px solid #22d3ee;outline-offset:2px}
