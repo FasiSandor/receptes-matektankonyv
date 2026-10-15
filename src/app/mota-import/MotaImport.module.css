@@ -547,3 +547,8 @@
 .moreOptions summary{cursor:pointer;color:#9eacc3;font-size:13px;font-weight:700;list-style-position:inside}
 .moreOptions[open]{border-color:#3b82f6}
 .moreOptions[open] summary{color:#60a5fa;margin-bottom:14px}
+
+.savedNext{display:grid;gap:9px;margin:20px 0;padding:16px;border-radius:16px;background:#10243b;border:1px solid #3b82f6;color:#e2f0ff}
+.savedNext strong{color:#22c55e;font-size:16px}
+.savedNext p{color:#cbd5e1;font-size:13px;line-height:1.5;margin:0}
+.savedNext a{padding:11px 13px;border:1px solid #2a3445;background:#172033;border-radius:10px;color:#60a5fa;text-decoration:none;font-size:14px;font-weight:700}
