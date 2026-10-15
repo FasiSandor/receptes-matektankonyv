@@ -18,7 +18,7 @@ const problems:Problem[]=[
 {id:"m11-3",grade:"11",topic:"Trigonometria",question:"Mennyi sin 30° pontos értéke?",choices:["0","1/2","√2/2","1"],answer:1,explanation:"A nevezetes szög szinusza sin 30° = 1/2."},
 {id:"m12-1",grade:"12",topic:"Statisztika",question:"Mi a 2, 4, 4, 10 számok átlaga?",choices:["4","5","6","20"],answer:1,explanation:"Az összeg 20, az elemszám 4, ezért az átlag 20/4=5."},
 {id:"m12-2",grade:"12",topic:"Valószínűség",question:"Két szabályos érme feldobásakor mennyi az esélye, hogy pontosan egy fej lesz?",choices:["1/4","1/2","3/4","1"],answer:1,explanation:"A négy azonos esélyű eset: FF, FI, IF, II; pontosan egy fej két esetben szerepel."},
-{id:"m12-3",grade:"12",topic:"Függvények",question:"Hol van az f(x)=x²−4 függvény zérushelye?",choices:["−4 és 4","csak 2","−2 és 2","nincs"],answer:2,explanation:"x²−4=0 ⇒ x²=4 ⇒ x=−2 vagy x=2."}
+{id:"m12-3",grade:"12",topic:"Függvények",question:"Hol van az f(x)=x²−4 függvény zérushelye?",choices:["−4 és 4","csak 2","−2 és 2","nincs"],answer:2,explanation:"x²−4=0 ⇒ x²=4 ⇒ x=−2 vagy x=2."},
 {id:"m9-5",grade:"9",topic:"Százalékszámítás",question:"Egy 8000 Ft-os termék ára 25%-kal csökken. Mennyi az új ár?",choices:["2000 Ft","6000 Ft","7000 Ft","7500 Ft"],answer:1,explanation:"A kedvezmény 8000 × 0,25 = 2000 Ft, tehát az új ár 6000 Ft."},
 {id:"m9-6",grade:"9",topic:"Algebra",question:"Oldd meg: 5(x−2)=20",choices:["x=2","x=4","x=6","x=8"],answer:2,explanation:"Oszd el 5-tel: x−2=4, majd adj hozzá 2-t: x=6."},
 {id:"m9-7",grade:"9",topic:"Geometria",question:"Mekkora egy 7 cm és 4 cm oldalú téglalap területe?",choices:["11 cm²","22 cm²","28 cm²","34 cm²"],answer:2,explanation:"A terület 7 × 4 = 28 cm²."},
