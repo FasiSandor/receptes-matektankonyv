@@ -14,7 +14,7 @@ starter:"/images/library/starter.jpg",
 dessert:"/images/library/dessert.jpg"
 };
 export function Tile({href,title,subtitle,image}:{href:string;title:string;subtitle:string;image:string}){
-return <Link className="kh-tile" href={href}><div className="kh-tile-media"><div className="kh-image-fallback" aria-hidden="true"><span>✦</span></div><img src={image} alt="" loading="lazy" onError={e=>{e.currentTarget.style.display="none"}}/></div><div className="kh-tile-body"><div className="kh-tile-title">{title}</div><div className="kh-muted" style={{marginTop:6}}>{subtitle}</div></div></Link>}
+return <Link className="kh-tile" href={href}><div className="kh-tile-media" style={{backgroundImage:`url("${image}")`}}><div className="kh-image-fallback" aria-hidden="true"><span>✦</span></div><img src={image} alt="" loading="eager" decoding="async" onError={e=>{e.currentTarget.style.display="none"}}/></div><div className="kh-tile-body"><div className="kh-tile-title">{title}</div><div className="kh-muted" style={{marginTop:6}}>{subtitle}</div></div></Link>}
 export default function KnowledgeShell({children}:{children:React.ReactNode}){
 const pathname=usePathname();const [theme,setTheme]=useState("dark");
 useEffect(()=>{setTheme(localStorage.getItem("tudastar-theme")==="light"?"light":"dark")},[]);
