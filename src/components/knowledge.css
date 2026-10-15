@@ -14,3 +14,18 @@
 .kh-tile-media{width:100%;aspect-ratio:1.55;background-color:#172033;background-position:center;background-repeat:no-repeat;background-size:cover;display:block}
 .kh-photo-hero{height:215px;min-height:0;background-position:center;background-size:cover;background-repeat:no-repeat}
 @media(max-width:470px){.kh-photo-hero{height:178px}}
+
+
+/* Unified quick-add sheet; native modal-like overlay, mobile first. */
+.kh-fab{cursor:pointer;border:1px solid #60a5fa!important;background:#111827!important;color:#60a5fa!important;font-family:inherit}
+.kh-add-overlay{position:fixed;inset:0;z-index:190;background:rgba(0,0,0,.72);display:flex;align-items:flex-end;justify-content:center;padding:16px 12px max(22px,env(safe-area-inset-bottom))}
+.kh-add-sheet{width:min(560px,100%);background:#111827;color:#f8fafc;border:1px solid #3b82f6;border-radius:24px;padding:20px;box-shadow:0 24px 70px #000b;display:grid;gap:12px}
+.kh-add-heading{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.kh-add-heading h2{margin:0;font-size:22px}
+.kh-add-heading button{background:#172033;color:#f8fafc;border:1px solid #2a3445;border-radius:12px;width:42px;height:42px;font-size:26px;cursor:pointer}
+.kh-add-sheet p{color:#a2b0c6;font-size:14px;margin:0 0 4px}
+.kh-add-sheet>a{display:grid;grid-template-columns:30px 1fr;gap:2px 12px;align-items:center;padding:14px;border:1px solid #2a3445;background:#172033;color:#60a5fa;border-radius:14px;text-decoration:none;font-size:20px}
+.kh-add-sheet>a strong{color:white;font-size:15px}
+.kh-add-sheet>a span{grid-column:2;font-size:12px;color:#9eacc3}
+.kh-add-sheet>a:focus-visible,.kh-add-sheet>a:hover{border-color:#3b82f6}
+@media(min-width:700px){.kh-add-overlay{align-items:center}}
