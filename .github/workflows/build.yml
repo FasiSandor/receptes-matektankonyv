@@ -25,6 +25,41 @@ jobs:
             process.stdout.write(name+': '+data.length+' bytes, valid JPEG\\n');
           }
           NODE
+      - name: School pairing cryptographic contract tests
+        shell: bash
+        run: |
+          node - <<'NODE'
+          const fs=require('node:fs'),ts=require('typescript'),vm=require('node:vm');
+          const crypto=require('node:crypto');
+          const src=fs.readFileSync('src/lib/school-link.ts','utf8');
+          const js=ts.transpileModule(src,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
+          const secret='CI-only-school-link-secret-abcdefghijklmnopqrstuvwxyz';
+          const exports={}; const module={exports};
+          const context={exports,module,Buffer,process:{env:{SCHOOL_LINK_SECRET:secret}},Date,require:(name)=>{
+            if(name==='node:crypto')return crypto;
+            if(name==='next/headers')return {cookies:async()=>({get:()=>undefined})};
+            throw Error('Unexpected import: '+name);
+          }};
+          vm.runInNewContext(js,context);
+          const lib=module.exports;
+          const owner='teacher-owner-ci-test';
+          function token(override={}){
+            const payload={v:1,aud:'receptes-matektankonyv',sub:owner,exp:Date.now()+300000,nonce:crypto.randomBytes(16).toString('hex'),...override};
+            const raw=Buffer.from(JSON.stringify(payload)).toString('base64url');
+            return raw+'.'+crypto.createHmac('sha256',secret).update(raw).digest('base64url');
+          }
+          const valid=token();
+          if(!lib.schoolLinkReady()||lib.validateLinkCode(valid)?.owner!==owner)throw Error('Valid teacher code rejected');
+          if(lib.validateLinkCode(valid+'x')!==null)throw Error('Tampered signature accepted');
+          if(lib.validateLinkCode(token({aud:'wrong-app'}))!==null)throw Error('Wrong audience accepted');
+          if(lib.validateLinkCode(token({exp:Date.now()-1000}))!==null)throw Error('Expired code accepted');
+          if(lib.validateLinkCode(token({exp:Date.now()+600000}))!==null)throw Error('Too-long lifetime accepted');
+          if(lib.validateLinkCode(token({nonce:'bad'}))!==null)throw Error('Malformed nonce accepted');
+          if(lib.validateLinkCode('x'.repeat(4097))!==null)throw Error('Oversized token accepted');
+          const cookie=lib.issueSchoolCookie(owner);
+          if(cookie.split('.').length!==2)throw Error('Link cookie format invalid');
+          console.log('School code signing, audience, expiry, tampering, nonce, length and cookie: OK');
+          NODE
       - run: npm run lint
       - run: npm run build
 
