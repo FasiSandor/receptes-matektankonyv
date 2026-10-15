@@ -20,3 +20,7 @@
 .kh-photo-hero{height:215px;min-height:0}
 .kh-photo-hero .kh-photo-hero-image{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;object-fit:cover!important}
 @media(max-width:470px){.kh-photo-hero{height:178px}}
+
+/* Never display an empty gray rectangle when external photography fails. */
+.kh-tile-media .kh-image-fallback{position:absolute;inset:0;display:grid;place-items:center;background:radial-gradient(circle at 75% 25%,#2563eb55,transparent 60%),linear-gradient(135deg,#172033,#0b182c);color:#60a5fa}
+.kh-image-fallback span{font-size:clamp(30px,5vw,55px);opacity:.6;text-shadow:0 0 30px #3b82f677}
