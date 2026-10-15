@@ -12,5 +12,18 @@ jobs:
         with:
           node-version: '22'
       - run: npm install --no-audit --no-fund
+      - name: Validate bundled JPEG photos for deployment
+        run: |
+          node - <<'NODE'
+          const fs=require('node:fs');
+          const names=['recipe','technology','sources','studio','main','starter','dessert','math','school','students','planning'];
+          for(const name of names){
+            const path=`public/images/library/${name}.jpg`;
+            if(!fs.existsSync(path))throw new Error('Missing: '+path);
+            const data=fs.readFileSync(path);
+            if(data.length<8000 || data[0]!==0xff || data[1]!==0xd8 || data.at(-2)!==0xff || data.at(-1)!==0xd9)throw new Error('Invalid JPEG: '+path);
+            process.stdout.write(name+': '+data.length+' bytes, valid JPEG\\n');
+          }
+          NODE
       - run: npm run lint
       - run: npm run build
