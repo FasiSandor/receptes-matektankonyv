@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import KnowledgeShell from "@/components/KnowledgeShell";
+import PhotoHero from "@/components/PhotoHero";
 import { useEffect, useMemo, useState } from "react";
 import {
   createLibraryVideoUrl,
@@ -341,27 +343,7 @@ export default function CollectionPage() {
   }
 
   return (
-    <main className={styles.shell}><a href="/" style={{display:"inline-block",color:"#b2a0ff",padding:"5px 0 12px",textDecoration:"none",fontSize:13,fontWeight:700}}>← Receptes és Matektankönyv</a>
-      <header className={styles.topbar}>
-        <Link href="/mota-import" className={styles.brand}>
-          <img src="https://recept-ai-phi.vercel.app/mota-import/icon-180.png" alt="" className={styles.brandIcon} />
-          <span className={styles.brandText}>
-            <strong>MOTA Import</strong>
-            <small>Gasztro videó-katalógus & tudástár</small>
-          </span>
-        </Link>
-        <Link href="/mota-import" className={styles.importLink}>
-          <span>＋</span>
-          <b>Új import</b>
-        </Link>
-      </header>
-
-      <section className={styles.hero}>
-        <span className={styles.kicker}>RENDSZEREZETT GASZTRO TUDÁSTÁR</span>
-        <h1>Gyűjtemény</h1>
-        <p>{items.length} mentett szakmai anyag · kereshető videók, receptek és technológiák</p>
-      </section>
-
+    <KnowledgeShell><main className={styles.shell}><PhotoHero title="Forrástár" subtitle="VIDEÓK · LINKEK · FELDOLGOZOTT ANYAGOK" image="/images/library/sources.jpg"/><div className={styles.quickLinks}><Link href="/mota-import?mode=link">+ Új hozzáadás</Link><Link href="/recepttar">Recepttár</Link></div><p className={styles.summary}>{items.length} mentett forrásanyag · kereshető videók, receptek és technológiák</p>
       <section className={styles.toolbar}>
         <div className={styles.searchWrap}>
           <span>⌕</span>
@@ -736,7 +718,7 @@ export default function CollectionPage() {
         </div>
       </section>
 
-      <footer className={styles.footer}>MOTA Import v0.6.1</footer>
-    </main>
+      <footer className={styles.footer}>Tudáskönyvtár · Forrástár</footer>
+    </main></KnowledgeShell>
   );
 }
