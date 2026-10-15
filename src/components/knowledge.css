@@ -29,3 +29,11 @@
  * WebKit fails to paint the absolutely positioned HTML image. */
 .kh-tile-media{background-position:center!important;background-size:cover!important;background-repeat:no-repeat!important}
 .kh-photo-hero{background-position:center!important;background-size:cover!important;background-repeat:no-repeat!important}
+
+/* Photo layer order: never allow a fallback placeholder to cover a loaded
+   JPEG or the card's background image on iOS Safari. */
+.kh-tile-media .kh-image-fallback{display:none!important}
+.kh-grid .kh-tile .kh-tile-media img{position:relative!important;inset:auto!important;width:100%!important;height:100%!important;object-fit:cover!important;z-index:1}
+.kh-photo-hero .kh-photo-hero-image{z-index:0}
+.kh-photo-hero .kh-photo-hero-shade{z-index:1}
+.kh-photo-hero .kh-photo-hero-inner{z-index:2}
