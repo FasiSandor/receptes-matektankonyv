@@ -74,3 +74,21 @@
 .kh-root:not(.light) .kh-empty{background:linear-gradient(140deg,#0c2b4b,#071a30);border-color:#2b7aaf;color:#b9d8f3}
 .kh-root:not(.light) .kh-modal{backdrop-filter:blur(9px)}
 .kh-root:not(.light) .kh-tile:hover .kh-tile-title{color:#62dcff}
+
+/* Reference-matched iPhone pill navigation: separate inset active capsule */
+.kh-navbar{left:12px;right:12px;bottom:max(11px,env(safe-area-inset-bottom));border:1px solid #394454;border-radius:999px;grid-template-columns:repeat(4,minmax(0,1fr));padding:6px;background:#242830f5;box-shadow:inset 0 2px #ffffff10,0 11px 32px #000b;overflow:hidden}
+.kh-tab{min-width:0;min-height:68px;padding:7px 2px;border-radius:999px;gap:5px;color:#f3f7fc;font-size:clamp(10px,2.7vw,13px);font-weight:600;transition:background-color .17s,color .17s}
+.kh-tab svg{color:#f3f7fc}
+.kh-tab.active{background:#080e19;color:#479dff;font-weight:800;box-shadow:inset 0 1px #ffffff07}
+.kh-tab.active svg{color:#479dff;filter:none}
+.kh-tab:focus-visible{outline:2px solid #24cfff;outline-offset:-3px}
+.kh-fab{bottom:calc(max(11px,env(safe-area-inset-bottom)) + 90px);background:linear-gradient(140deg,#11c8ff,#075df4);border:1px solid #80e9ff;border-radius:50%;box-shadow:0 0 22px #099dff72,0 8px 22px #0009}
+.kh-btn.danger,.kh-root:not(.light) .kh-btn.danger{display:inline-flex;align-items:center;justify-content:center;gap:9px;background:linear-gradient(180deg,#f04440,#d72d30);color:#fff;border:1px solid #ff716d;border-radius:999px;padding:12px 21px;font-weight:750;box-shadow:inset 0 1px #ffb4b454,0 6px 18px #c92b302c}
+.kh-btn.danger:hover{background:linear-gradient(180deg,#ff5150,#b81c27);box-shadow:0 0 18px #e3323559}
+.kh-btn.danger:disabled{opacity:.55;cursor:not-allowed}
+.kh-root.light .kh-navbar{background:#29323e;color:#fff}
+.kh-root.light .kh-tab{color:#fff}
+.kh-root.light .kh-tab.active{background:#0d1521;color:#62aaff}
+@media(min-width:900px){.kh-navbar{position:sticky;top:10px;bottom:auto;left:auto;right:auto;border-radius:999px;max-width:800px;margin:0 auto 24px;padding:5px}.kh-tab{min-height:54px;flex-direction:row;gap:10px;font-size:14px}.kh-fab{bottom:25px}}
+@media(max-width:390px){.kh-navbar{left:7px;right:7px}.kh-tab{font-size:10px}.kh-tab svg{width:22px;height:22px}}
+@media(prefers-reduced-motion:reduce){.kh-tab{transition:none}}
