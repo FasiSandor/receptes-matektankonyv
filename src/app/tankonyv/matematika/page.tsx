@@ -1,0 +1,1 @@
+import TextbookReader from "@/components/TextbookReader";export default function Page(){return <TextbookReader subject="matematika"/>}
