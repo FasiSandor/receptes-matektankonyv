@@ -1,3 +1,4 @@
+import {neon} from "@neondatabase/serverless";
 import {NextRequest,NextResponse} from "next/server";
 import {authenticated} from "@/lib/auth";
 import {issueSchoolCookie,linkedSchoolOwner,schoolCookieName,schoolLinkReady,validateLinkCode} from "@/lib/school-link";
@@ -8,9 +9,17 @@ export async function POST(request:NextRequest){
  if(!await authenticated())return NextResponse.json({error:"Bejelentkezés szükséges."},{status:401});
  if(!schoolLinkReady())return NextResponse.json({error:"Az összekapcsolás még nincs konfigurálva."},{status:503});
  const body=await request.json().catch(()=>({}));
- const owner=validateLinkCode(String(body.code||"").trim());
- if(!owner)return NextResponse.json({error:"A kód érvénytelen vagy lejárt."},{status:400});
- const response=NextResponse.json({ok:true});response.cookies.set(schoolCookieName,issueSchoolCookie(owner),opts);return response;
+ const token=validateLinkCode(String(body.code||"").trim());
+ if(!token)return NextResponse.json({error:"A kód érvénytelen vagy lejárt."},{status:400});
+ const url=process.env.DATABASE_URL;
+ if(!url)return NextResponse.json({error:"Az egyszeri kód ellenőrzése nincs konfigurálva."},{status:503});
+ try{
+ const sql=neon(url);
+ await sql`create table if not exists school_link_used_nonces (nonce text primary key, expires_at timestamptz not null, used_at timestamptz not null default now())`;
+ const inserted=await sql`insert into school_link_used_nonces (nonce,expires_at) values (${token.nonce},to_timestamp(${token.expires}/1000.0)) on conflict do nothing returning nonce`;
+ if(!inserted.length)return NextResponse.json({error:"Ezt az összekapcsolási kódot már felhasználtad. Kérj újat."},{status:409});
+ const response=NextResponse.json({ok:true});response.cookies.set(schoolCookieName,issueSchoolCookie(token.owner),opts);return response;
+ }catch{return NextResponse.json({error:"A biztonságos összekapcsolás most nem érhető el."},{status:503})}
 }
 export async function DELETE(){
  if(!await authenticated())return NextResponse.json({error:"Bejelentkezés szükséges."},{status:401});
