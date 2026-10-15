@@ -1091,3 +1091,34 @@
 .quickLinks a:focus-visible{outline:2px solid #22d3ee}
 .summary{color:#9eacc3;font-size:14px;margin:0 0 18px}
 .shell button:focus-visible,.shell a:focus-visible{outline:2px solid #22d3ee;outline-offset:2px}
+
+/* Forrástár premium visual system: all filters, cards, nested detail and menus */
+.shell{--bg:#06101e;--panel:#0b1b30;--panel2:#102b48;--text:#f3f9ff;--muted:#a5c3df;--muted2:#87a6c6;--line:#2e5880;--line2:#3677aa;--purple:#168dff;--purple2:#36c9ff;--purple3:#9beeff;--soft:#168dff20;color:var(--text)}
+.shell:before{background:radial-gradient(ellipse at 86% 0,#10416b,transparent 37%),linear-gradient(#07182a,#050c16)}
+.topbar{border-color:#285781}
+.brand{color:#f2faff}.brandText small,.kicker{color:#8ecff8}
+.brandIcon{border:1px solid #318de0;box-shadow:0 0 22px #147bff44}
+.importLink{background:linear-gradient(120deg,#1ba8ff,#1660e9);border-color:#56d2ff;box-shadow:0 8px 25px #118cff44}
+.hero h1{color:#f4fbff;text-shadow:0 0 24px #248bff25}.hero p{color:#b9cfe5}
+.searchWrap{background:#081e35;border:1px solid #3674a6;border-radius:17px;box-shadow:0 10px 28px #0004}
+.searchWrap:focus-within{border-color:#40c4ff;box-shadow:0 0 0 3px #0e95ff22}
+.searchWrap>span{color:#3cc6ff}.search{color:#eff9ff}.search::placeholder{color:#86a5c1}
+.filter,.filterActive,.quick,.quickActive,.statusButton,.statusActive{background:#0c243c;border-color:#285a86;border-radius:13px;color:#b8d5ed}
+.filterActive,.quickActive,.statusActive{color:white;border-color:#46c1ff;background:linear-gradient(135deg,#087bd8,#1649ae);box-shadow:0 5px 20px #168eff4c}
+.grid{gap:12px}
+.card{background:linear-gradient(145deg,#122b47,#091a2d);border:1px solid #2d5b84;border-radius:19px;box-shadow:0 12px 28px #0006}
+.card:hover,.card:focus-within{border-color:#39a6ed}
+.thumb,.thumbPlaceholder,.videoPreview{border-color:#3a719f;border-radius:13px;background:#0f2a46}
+.thumbPlaceholder{color:#45caff}
+.cardText h2{color:#f5fbff}.meta{color:#a2bfdc}.meta b{color:#55cfff}
+.cardText p{color:#a9c5dd}.moreButton{color:#8cceef}
+.tagRow b{background:#103050;color:#8cdaff;border:1px solid #285b88}
+.quickActions{scrollbar-width:none}
+.details{background:#091d31;border-color:#2d5b83}
+.detailSection{border-color:#2a5175}.detailSection li{color:#bad0e4}
+.ingredients b,.bottomActions a{color:#6bd5ff}
+.ingredients span{color:#f4f8ff}
+.note{background:#071c31;border-color:#32638b;color:white}.note:focus{border-color:#38bdf8}
+.device{background:#091c30;border-color:#2b5c86}.deviceIcon{background:#123e66;border-color:#2878b5;color:#49caff}
+.shell :is(button,a,input,textarea,select):focus-visible{outline:2px solid #4cdaff;outline-offset:3px}
+@media(max-width:580px){.shell{padding-left:12px;padding-right:12px}.card{border-radius:17px}.searchWrap{min-height:55px}}
