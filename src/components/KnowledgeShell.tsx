@@ -3,16 +3,7 @@ import Link from "next/link";
 import {usePathname} from "next/navigation";
 import {useEffect,useState} from "react";
 import "./knowledge.css";
-export const foodPics={
-recipe:"/images/library/recipe.jpg",
-technology:"/images/library/technology.jpg",
-sources:"/images/library/sources.jpg",
-studio:"/images/library/studio.jpg",
-soup:"/images/library/studio.jpg",
-main:"/images/library/main.jpg",
-starter:"/images/library/starter.jpg",
-dessert:"/images/library/dessert.jpg"
-};
+export {foodPics} from "@/lib/knowledge-images";
 export function Tile({href,title,subtitle,image}:{href:string;title:string;subtitle:string;image:string}){
 return <Link className="kh-tile" href={href}><div className="kh-tile-media" style={{backgroundImage:`url("${image}")`}} aria-hidden="true"/><div className="kh-tile-body"><div className="kh-tile-title">{title}</div><div className="kh-muted" style={{marginTop:6}}>{subtitle}</div></div></Link>}
 export default function KnowledgeShell({children}:{children:React.ReactNode}){
