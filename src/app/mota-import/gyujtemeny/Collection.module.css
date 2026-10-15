@@ -1,15 +1,15 @@
 .shell{
-  --bg:#10151d;
-  --panel:#18202b;
-  --panel2:#1c2532;
+  --bg:#0b0f14;
+  --panel:#111827;
+  --panel2:#172033;
   --text:#edf0f4;
   --muted:#aeb7c5;
   --muted2:#808b9b;
   --line:#344052;
   --line2:#435066;
-  --purple:#6c4cff;
-  --purple2:#8a63ff;
-  --purple3:#b39fff;
+  --purple:#3b82f6;
+  --purple2:#60a5fa;
+  --purple3:#93c5fd;
   --soft:rgba(108,76,255,.12);
 }
 
@@ -29,7 +29,7 @@
   background:
     radial-gradient(circle at 78% -8%,rgba(96,78,220,.16),transparent 28%),
     radial-gradient(circle at 8% 24%,rgba(64,112,170,.12),transparent 30%),
-    linear-gradient(180deg,#111821 0%,#141b25 50%,#10151d 100%);
+    linear-gradient(180deg,#111821 0%,#111827 50%,#0b0f14 100%);
 }
 
 .topbar{
@@ -73,7 +73,7 @@
   border:1px solid #6d5fd0;
   border-radius:12px;
   color:#f0edf9;
-  background:linear-gradient(135deg,#5b47d6,#6f55e9);
+  background:linear-gradient(135deg,#1d4ed8,#3b82f6);
   text-decoration:none;
   font-size:12px;
   font-weight:800;
@@ -762,7 +762,7 @@
   background:#090d15;
 }
 .sourcePageActive{
-  border-color:#7354ff;
+  border-color:#3b82f6;
   background:linear-gradient(145deg,rgba(78,52,190,.30),rgba(12,14,27,.96));
   box-shadow:inset 0 0 0 1px rgba(115,84,255,.10);
 }
@@ -982,7 +982,7 @@
   background:#18212c;
 }
 .sourceTileActive{
-  border-color:#7766d2;
+  border-color:#3b82f6;
   background:#282e48;
 }
 .sourceTile>button,.sourceTileActive>button{
@@ -1016,7 +1016,7 @@
   width:100%;
   min-height:44px;
   margin-top:12px;
-  border:1px solid #7766d2;
+  border:1px solid #3b82f6;
   border-radius:11px;
   background:#2b2548;
   color:#d5cbff;
@@ -1060,11 +1060,11 @@
   font-size:8px;
 }
 .facetActive{
-  border-color:#7766d2;
+  border-color:#3b82f6;
   background:#2c3150;
   color:#e7e2ff;
 }
-.facetActive b{background:#6a56cb;color:#fff}
+.facetActive b{background:#2563eb;color:#fff}
 
 @media(max-width:680px){
   .brandIcon{width:44px;height:44px;border-radius:12px}
@@ -1081,3 +1081,13 @@
   .catalogTools{grid-template-columns:1fr}
   .sourceGrid,.facetGrid{grid-template-columns:1fr}
 }
+
+
+/* Knowledge Library integration — retain existing data features while sharing shell. */
+.shell{max-width:100%;width:100%;min-height:0;padding:0 0 64px;overflow:visible;background:#0b0f14;color:#f8fafc}
+.shell::before,.shell::after{display:none!important}
+.quickLinks{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0 20px}
+.quickLinks a{padding:10px 14px;border:1px solid #2a3445;border-radius:11px;background:#172033;color:#60a5fa;text-decoration:none;font-size:14px;font-weight:700}
+.quickLinks a:focus-visible{outline:2px solid #22d3ee}
+.summary{color:#9eacc3;font-size:14px;margin:0 0 18px}
+.shell button:focus-visible,.shell a:focus-visible{outline:2px solid #22d3ee;outline-offset:2px}
