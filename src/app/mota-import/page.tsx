@@ -134,7 +134,7 @@ export default function MotaImportPage() {
     const incomingUrl = params.get("url");
     if (incomingUrl) {
       setUrl(incomingUrl);
-      setAction("both");
+      setAction("extract");
     }
   }, []);
 
@@ -250,7 +250,12 @@ export default function MotaImportPage() {
       if (action === "extract") await extract();
       if (action === "both") {
         await extract();
-        await saveVideo();
+        try {
+          await saveVideo();
+        } catch (downloadError) {
+          const detail = downloadError instanceof Error ? downloadError.message : "A videó nem tölthető le.";
+          setStatus("A receptjavaslat elkészült, de a videó külön nem menthető: " + detail + " A receptet ettől még elmentheted a Gyűjteménybe.");
+        }
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Váratlan hiba történt.");
@@ -316,7 +321,7 @@ export default function MotaImportPage() {
     try {
       const currentUrl = url.trim();
       await saveLibraryResult({
-        title: "Facebook-videó – feldolgozásra vár",
+        title: detectedSource === "facebook" ? "Facebook-videó – feldolgozásra vár" : "Videó – feldolgozásra vár",
         source_url: currentUrl,
         platform: detectedSource,
         hungarian_summary: "A videó adatait a forrás nem adta át. A link megőrizve; a receptet még nem nyertük ki.",
