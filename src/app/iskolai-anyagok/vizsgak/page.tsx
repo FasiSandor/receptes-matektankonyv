@@ -1,5 +1,5 @@
-import PhotoHero from "@/components/PhotoHero";
 "use client";
+import PhotoHero from "@/components/PhotoHero";
 import {useEffect,useMemo,useState} from "react";
 import KnowledgeShell from "@/components/KnowledgeShell";
 type Exam={id:string;student_id:string;school_year:string;basket:string|null;menu_approved:boolean;status:string;student_name:string;class_name:string;class_id:string};
