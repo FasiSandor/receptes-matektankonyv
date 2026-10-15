@@ -116,6 +116,7 @@ export default function MotaImportPage() {
   const [result, setResult] = useState<Result | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [selectedImages,setSelectedImages]=useState<File[]>([]);
   const [selectedVideo,setSelectedVideo]=useState<File|null>(null);
   const [selectedAudio,setSelectedAudio]=useState<File|null>(null);
   const [uploadedVideoResult,setUploadedVideoResult]=useState(false);
@@ -135,6 +136,7 @@ export default function MotaImportPage() {
     const params = new URLSearchParams(window.location.search);
     const incomingUrl = params.get("url");
     if(params.get("mode")==="video") document.getElementById("kh-video-upload")?.scrollIntoView({block:"center"});
+    if(params.get("mode")==="image") document.getElementById("kh-image-upload")?.scrollIntoView({block:"center"});
     if (incomingUrl) {
       setUrl(incomingUrl);
       setAction("extract");
@@ -266,6 +268,35 @@ export default function MotaImportPage() {
     } finally {
       setBusy(false);
     }
+  }
+
+  async function analyzeImages() {
+    if(!selectedImages.length||busy)return;
+    setBusy(true);setError("");setResult(null);setSaved(false);
+    try {
+      const frames:{data:string;time:number}[]=[];
+      for(const [index,file] of selectedImages.slice(0,8).entries()){
+        const image=await createImageBitmap(file);
+        try{
+          const canvas=document.createElement("canvas");
+          const factor=Math.min(1,580/Math.max(image.width,image.height));
+          canvas.width=Math.max(1,Math.round(image.width*factor));
+          canvas.height=Math.max(1,Math.round(image.height*factor));
+          const ctx=canvas.getContext("2d");
+          if(!ctx)throw new Error("A képfeldolgozás nem támogatott.");
+          ctx.drawImage(image,0,0,canvas.width,canvas.height);
+          frames.push({data:canvas.toDataURL("image/jpeg",0.65),time:index});
+        }finally{image.close()}
+      }
+      setStatus("A Gemini elemzi a feltöltött képeket…");
+      const response=await fetch("/api/mota-frames",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({frames,sourceUrl:url.trim(),focus:"recipe"})});
+      const data=await response.json().catch(()=>null);
+      if(!response.ok)throw new Error(data?.error||"A képek elemzése sikertelen.");
+      setResult(data as Result);
+      setUploadedVideoResult(true);
+      setStatus("Kész: receptjavaslat a feltöltött képek alapján. A bizonytalan mennyiségeket ellenőrizd.");
+    }catch(e){setError(e instanceof Error?e.message:"Képfeldolgozási hiba.");setStatus("");}
+    finally{setBusy(false)}
   }
 
   async function analyzeLocalVideo() {
@@ -474,6 +505,12 @@ export default function MotaImportPage() {
             </button>
           </div>
         )}
+        <div id="kh-image-upload" className={styles.photoUpload}>
+          <strong>Képekből recept</strong>
+          <p>Válassz legfeljebb 8 étel- vagy receptfotót. Az AI csak a látható tartalom alapján készít ellenőrizhető receptjavaslatot.</p>
+          <input type="file" accept="image/*" multiple aria-label="Receptképek kiválasztása" onChange={e=>setSelectedImages(Array.from(e.target.files||[]).slice(0,8))}/>
+          <button type="button" className={styles.run} disabled={!selectedImages.length||busy} onClick={()=>void analyzeImages()}><span>▧</span><strong>{busy?"Feldolgozás…":selectedImages.length?selectedImages.length+" kép elemzése":"Képek elemzése"}</strong><span>→</span></button>
+        </div>
         <div id="kh-video-upload" style={{marginTop:18,padding:16,border:"1px solid #2A3445",borderRadius:14,background:"#172033",display:"grid",gap:10}}>
           <strong style={{color:"#f8fafc"}}>Videófájl elemzése – Facebook helyett is</strong>
           <small style={{color:"#9eacc3"}}>Válassz ki egy MP4/MOV videót a Fájlokból vagy Fotókból. A Gemini a videó képkockáiból készít magyar receptjavaslatot. Külön hangrészlet feltöltésével a beszéd is elemezhető.</small>
