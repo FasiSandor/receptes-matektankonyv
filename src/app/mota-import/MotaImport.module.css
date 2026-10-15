@@ -558,3 +558,20 @@
 .photoUpload p{margin:0;font-size:13px;line-height:1.6;color:#aab9d0}
 .photoUpload input{max-width:100%;color:#e2e8f0;font-size:14px}
 .photoUpload:target{border-color:#3b82f6}
+
+/* Premium photographic dark-tech treatment for import / source processing workspace. */
+.shell{--bg:#06101e;--panel:#0a1e33;--panel2:#102a45;--panel3:#153657;--text:#f2f9ff;--muted:#a5bfd8;--muted2:#81a4c7;--line:#2e5b86;--line2:#397eb1;--purple:#1894ff;--purple2:#43c8ff;--purple3:#a0ebff;--soft:#168dff21;color:var(--text)}
+.shell::before,.shell::after{display:none!important}
+.header{border-color:#305e88}.brand{color:#f5faff}.brandIcon{border:1px solid #319bdb;box-shadow:0 0 23px #168dff55}
+.hero{position:relative;padding:28px 20px 27px;margin:14px 0 22px;border:1px solid #3777a6;border-radius:21px;background:linear-gradient(90deg,#061426f2,#07162dc0 74%,#07162d70),url("/images/library/studio.jpg") center/cover;box-shadow:0 13px 40px #0009}
+.hero h1{font-size:clamp(35px,8vw,59px);color:#f7fbff;text-shadow:0 3px 17px #000b}.heroAccent{color:#4ccaff;text-shadow:0 0 27px #058bff88}
+.hero p{color:#e0efff;font-size:clamp(14px,3vw,17px);text-shadow:0 2px 10px #000b}.heroKicker{color:#71dbff}
+.card,.results,.photoUpload,.savedNext,.moreOptions{background:linear-gradient(150deg,#102d49,#081c30);border-color:#30638d;border-radius:18px;box-shadow:0 12px 30px #0005}
+.urlField,.sourceButton,.focus,.action,.quickLinks a{background:#081d32;border-color:#36648c;color:#c7e6ff}
+.urlField:focus-within{border-color:#42caff;box-shadow:0 0 0 3px #178cff2b}
+.sourceActive,.actionActive,.focusActive{border-color:#45bfff;background:linear-gradient(130deg,#1157a9,#0b3265);box-shadow:0 5px 19px #0b8fff33;color:#fff}
+.actionIcon,.folderIcon,.linkGlyph{color:#50caff}.detectedSource{color:#6cddff}
+.libraryLink{background:linear-gradient(130deg,#102e4b,#0b1c2f);border-color:#3279b8}.libraryLink i{color:#6cdaff}
+.shell :is(button,a,input,textarea,select):focus-visible{outline:2px solid #55dcff;outline-offset:3px}
+@media(max-width:600px){.hero{padding:23px 16px}.hero h1{line-height:1.05}.shell{padding-left:12px;padding-right:12px}}
+@media(prefers-reduced-motion:reduce){.shell *{scroll-behavior:auto!important}}
