@@ -65,3 +65,12 @@
 .kh-root:not(.light) .kh-btn.secondary{background:#0d3054;color:#a3e9ff;border-color:#2c82bc}
 .kh-root:not(.light) .kh-tile-title{color:#f8fcff}
 @media(max-width:600px){.kh-navbar{padding-top:11px}.kh-tab{min-height:57px}}
+
+/* Legacy mathematics/education interior: maintain a single luminous vocabulary */
+.kh-root:not(.light) .kh-actions>a,.kh-root:not(.light) .kh-actions>button{border-radius:13px}
+.kh-root:not(.light) .kh-section{color:#f6fbff;text-shadow:0 0 18px #168fff22}
+.kh-root:not(.light) .kh-recipe{border-radius:17px}
+.kh-root:not(.light) .kh-dialog{border-color:#338cc3;box-shadow:0 25px 70px #000c,0 0 30px #088dff21}
+.kh-root:not(.light) .kh-empty{background:linear-gradient(140deg,#0c2b4b,#071a30);border-color:#2b7aaf;color:#b9d8f3}
+.kh-root:not(.light) .kh-modal{backdrop-filter:blur(9px)}
+.kh-root:not(.light) .kh-tile:hover .kh-tile-title{color:#62dcff}
