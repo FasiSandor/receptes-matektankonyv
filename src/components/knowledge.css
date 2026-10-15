@@ -24,3 +24,8 @@
 /* Never display an empty gray rectangle when external photography fails. */
 .kh-tile-media .kh-image-fallback{position:absolute;inset:0;display:grid;place-items:center;background:radial-gradient(circle at 75% 25%,#2563eb55,transparent 60%),linear-gradient(135deg,#172033,#0b182c);color:#60a5fa}
 .kh-image-fallback span{font-size:clamp(30px,5vw,55px);opacity:.6;text-shadow:0 0 30px #3b82f677}
+
+/* Safari fallback: the local JPEG is painted as the media background even if
+ * WebKit fails to paint the absolutely positioned HTML image. */
+.kh-tile-media{background-position:center!important;background-size:cover!important;background-repeat:no-repeat!important}
+.kh-photo-hero{background-position:center!important;background-size:cover!important;background-repeat:no-repeat!important}
