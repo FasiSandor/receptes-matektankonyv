@@ -14,7 +14,7 @@ starter:"https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=900&q=82
 dessert:"https://images.unsplash.com/photo-1488477181946-6428a0291777?w=900&q=82"
 };
 export function Tile({href,title,subtitle,image}:{href:string;title:string;subtitle:string;image:string}){
-return <Link className="kh-tile" href={href}><div className="kh-tile-media"><img src={image} alt="" loading="lazy" onError={e=>{const el=e.currentTarget;if(el.dataset.fallback)return;el.dataset.fallback="1";el.src=foodPics.recipe}}/></div><div className="kh-tile-body"><div className="kh-tile-title">{title}</div><div className="kh-muted" style={{marginTop:6}}>{subtitle}</div></div></Link>}
+return <Link className="kh-tile" href={href}><div className="kh-tile-media"><div className="kh-image-fallback" aria-hidden="true"><span>✦</span></div><img src={image} alt="" loading="lazy" onError={e=>{e.currentTarget.style.display="none"}}/></div><div className="kh-tile-body"><div className="kh-tile-title">{title}</div><div className="kh-muted" style={{marginTop:6}}>{subtitle}</div></div></Link>}
 export default function KnowledgeShell({children}:{children:React.ReactNode}){
 const pathname=usePathname();const [theme,setTheme]=useState("dark");
 useEffect(()=>{setTheme(localStorage.getItem("tudastar-theme")==="light"?"light":"dark")},[]);
