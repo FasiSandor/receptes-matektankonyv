@@ -23,7 +23,9 @@ export async function POST(request:NextRequest){
  const response=NextResponse.json({ok:true});response.cookies.set(schoolCookieName,issueSchoolCookie(token.owner),opts);return response;
  }catch{return NextResponse.json({error:"A biztonságos összekapcsolás most nem érhető el."},{status:503})}
 }
-export async function DELETE(){
+export async function DELETE(request:NextRequest){
+ const origin=request.headers.get("origin");
+ if(!origin||origin!==new URL(request.url).origin)return NextResponse.json({error:"Érvénytelen kérésforrás."},{status:403});
  if(!await authenticated())return NextResponse.json({error:"Bejelentkezés szükséges."},{status:401});
  const response=NextResponse.json({ok:true});response.cookies.set(schoolCookieName,"",{...opts,maxAge:0});return response;
 }
