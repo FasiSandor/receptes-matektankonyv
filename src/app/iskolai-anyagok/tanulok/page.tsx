@@ -1,5 +1,5 @@
-import PhotoHero from "@/components/PhotoHero";
 "use client";
+import PhotoHero from "@/components/PhotoHero";
 import {useEffect,useState} from "react";
 import KnowledgeShell from "@/components/KnowledgeShell";
 type Roster={configured:boolean;message?:string;classes:{id:string;name:string}[];students:{id:string;class_id:string;name:string}[];records:{student_id:string;status:string;menu_approved:boolean}[]};
