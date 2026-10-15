@@ -1,6 +1,5 @@
 "use client";
 import {useEffect,useState} from "react";
-import {useSearchParams} from "next/navigation";
 import CloudWorkspace from "@/components/CloudWorkspace";
 type View="home"|"recipes"|"recipe"|"math"|"lesson"|"import"|"media"|"search"|"edit"|"settings"|"studio"|"menus"|"exam"|"saved";
 const navigation:[View,string,string][]=[["home","Főoldal","⌂"],["recipes","Receptkönyv","♨"],["math","Matematika","∑"],["studio","Fogáskomponáló","✦"],["menus","Menüstúdió","☷"],["exam","Vizsgaműhely","⚑"],["media","Videókönyvtár","▶"],["import","Hozzáadás","＋"],["search","Keresés","⌕"],["saved","Mentett","♡"],["settings","Beállítások","⚙"]];
@@ -10,12 +9,11 @@ const seedRecipes=[{id:"palacsinta",title:"Alappalacsinta",category:"Desszertek"
 type Draft={id:number,title:string,url:string,type:string,approved:boolean};
 const norm=(s:string)=>s.toLocaleLowerCase("hu-HU").normalize("NFD").replace(/[\u0300-\u036f]/g,"");
 export default function Home(){
- const searchParams=useSearchParams();
  const [view,setView]=useState<View>("home"),[recipeId,setRecipeId]=useState("palacsinta"),[open,setOpen]=useState<string[]>([]),[servings,setServings]=useState(2),[favorite,setFavorite]=useState<string[]>([]),[drafts,setDrafts]=useState<Draft[]>([]),[ready,setReady]=useState(false),[url,setUrl]=useState(""),[title,setTitle]=useState(""),[kind,setKind]=useState("recept"),[query,setQuery]=useState(""),[grade,setGrade]=useState("9"),[mathMode,setMathMode]=useState("Tankönyv"),[cooking,setCooking]=useState(false),[step,setStep]=useState(0),[studioMode,setStudioMode]=useState("Saját"),[dish,setDish]=useState("Új fogás"),[parts,setParts]=useState<string[]>(["Főelem","Köret","Mártás"]),[part,setPart]=useState(""),[menuName,setMenuName]=useState("Új menüsor"),[courses,setCourses]=useState<string[]>(["Előétel","Főétel","Desszert"]),[course,setCourse]=useState(""),[menuPurpose,setMenuPurpose]=useState("Személyes"),[basketOk,setBasketOk]=useState(false),[rulesOk,setRulesOk]=useState(false),[settings,setSettings]=useState("Világos");
  useEffect(()=>{try{setFavorite(JSON.parse(localStorage.getItem("tk_favorites")||"[]"));setDrafts(JSON.parse(localStorage.getItem("tk_drafts")||"[]"));}catch{}setReady(true)},[]);
  useEffect(()=>{if(ready)localStorage.setItem("tk_favorites",JSON.stringify(favorite))},[favorite,ready]);
  useEffect(()=>{if(ready)localStorage.setItem("tk_drafts",JSON.stringify(drafts))},[drafts,ready]);
- useEffect(()=>{const requested=searchParams.get("view");if(requested==="math"||requested==="recipes"||requested==="studio"||requested==="menus"||requested==="exam")setView(requested)},[searchParams]);
+ useEffect(()=>{const requested=new URLSearchParams(window.location.search).get("view");if(requested==="math"||requested==="recipes"||requested==="studio"||requested==="menus"||requested==="exam")setView(requested)},[]);
  const go=(v:View)=>{setView(v);window.scrollTo(0,0)},toggle=(s:string)=>setOpen(x=>x.includes(s)?x.filter(t=>t!==s):[...x,s]);
  const recipe=seedRecipes.find(r=>r.id===recipeId)||seedRecipes[0];
  const addDraft=()=>{if(!url.trim())return;setDrafts(x=>[{id:Date.now(),title:title.trim()||"Új forrás",url,type:kind,approved:false},...x]);setUrl("");setTitle("")};
