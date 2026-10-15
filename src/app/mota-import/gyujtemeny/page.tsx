@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import {Trash2} from "lucide-react";
 import KnowledgeShell from "@/components/KnowledgeShell";
 import PhotoHero from "@/components/PhotoHero";
 import { useEffect, useMemo, useState } from "react";
@@ -293,7 +294,7 @@ export default function CollectionPage() {
   }
 
   async function remove(item: LibraryItem) {
-    if (!confirm(`Törlöd a gyűjteményből?\n\n${item.title}`)) return;
+    if (!confirm(`Biztosan VÉGLEG törlöd a gyűjteményből?\n\n${item.title}\n\nA mentett videófájl is törlődhet. Ez a művelet nem vonható vissza.`)) return;
     try {
       await deleteLibraryItem(item.id, item.video_path);
       setItems((current) => current.filter((x) => x.id !== item.id));
@@ -552,7 +553,7 @@ export default function CollectionPage() {
                           <div className={styles.bottomActions}>
                             <a href={item.source_url} target="_blank" rel="noopener noreferrer">{item.platform.toLowerCase().includes("facebook") ? "▶ Videó lejátszása a Facebookon ↗" : "▶ Videó megnyitása a forrásoldalon ↗"}</a>
                             <Link href={`/mota-import?url=${encodeURIComponent(item.source_url)}`}>✦ Újraelemzés / videófeltöltés</Link>
-                            <button type="button" onClick={() => void remove(item)}>Törlés</button>
+                            <button type="button" className="kh-btn danger" onClick={() => void remove(item)} aria-label={`${item.title} végleges törlése`}><Trash2 size={17} aria-hidden="true"/> Törlés végleg</button>
                           </div>
                         </div>
                       )}
