@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import KnowledgeShell from "@/components/KnowledgeShell";
+import PhotoHero from "@/components/PhotoHero";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { MotaResult, saveLibraryResult, uploadLibraryVideo } from "./library";
 import styles from "./MotaImport.module.css";
@@ -132,6 +134,7 @@ export default function MotaImportPage() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const incomingUrl = params.get("url");
+    if(params.get("mode")==="video") document.getElementById("kh-video-upload")?.scrollIntoView({block:"center"});
     if (incomingUrl) {
       setUrl(incomingUrl);
       setAction("extract");
@@ -370,34 +373,7 @@ export default function MotaImportPage() {
   }
 
   return (
-    <main className={styles.shell}><a href="/" style={{display:"inline-block",color:"#b2a0ff",padding:"5px 0 12px",textDecoration:"none",fontSize:13,fontWeight:700}}>← Receptes és Matektankönyv</a>
-      <header className={styles.header}>
-        <Link href="/mota-import" className={styles.brand}>
-          <img src="https://recept-ai-phi.vercel.app/mota-import/icon-180.png" alt="" className={styles.brandIcon} />
-          <span className={styles.brandText}>
-            <strong>MOTA Import</strong>
-            <small>Gasztro videó-katalógus & tudástár</small>
-          </span>
-        </Link>
-        <Link href="/mota-import/gyujtemeny" className={styles.libraryLink}>
-          <span className={styles.folderIcon}>▦</span>
-          <span>
-            <b>Gyűjtemény</b>
-            <small>Katalógus megnyitása</small>
-          </span>
-          <i>→</i>
-        </Link>
-      </header>
-
-      <section className={styles.hero}>
-        <span className={styles.heroKicker}>MENTÉS · ELEMZÉS · RENDSZEREZÉS</span>
-        <h1>
-          <span>Gasztro videóból</span>
-          <span className={styles.heroAccent}>rendszerezett tudás.</span>
-        </h1>
-        <p>Facebook, Instagram, TikTok és YouTube videókból automatikusan receptet, technológiát, tálalási ötleteket és kereshető katalógusadatokat készít.</p>
-      </section>
-
+    <KnowledgeShell><main className={styles.shell}><PhotoHero title="Új anyag hozzáadása" subtitle="LINK · VIDEÓ · RECEPT · FORRÁSTÁR" image="/images/library/sources.jpg"/><div className={styles.quickLinks}><Link href="/recepttar">Recepttár</Link><Link href="/mota-import/gyujtemeny">Forrástár</Link></div>
       <section className={styles.card}>
         <div className={styles.sectionLabel}>⌁ <span>Forrás kiválasztása</span></div>
         <div className={styles.sourceRow}>
@@ -431,7 +407,7 @@ export default function MotaImportPage() {
             type="url"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
-            onPaste={() => setAction("both")}
+            onPaste={() => setAction("extract")}
             placeholder={sourceConfig.placeholder}
             spellCheck={false}
           />
@@ -493,11 +469,11 @@ export default function MotaImportPage() {
             </button>
           </div>
         )}
-        <div style={{marginTop:18,padding:16,border:"1px solid #51407b",borderRadius:14,background:"#19152d",display:"grid",gap:10}}>
-          <strong style={{color:"#e9dfff"}}>Videófájl elemzése – Facebook helyett is</strong>
-          <small style={{color:"#c1b6df"}}>Válassz ki egy MP4/MOV videót a Fájlokból vagy Fotókból. A Gemini a videó képkockáiból készít magyar receptjavaslatot. Külön hangrészlet feltöltésével a beszéd is elemezhető.</small>
+        <div id="kh-video-upload" style={{marginTop:18,padding:16,border:"1px solid #2A3445",borderRadius:14,background:"#172033",display:"grid",gap:10}}>
+          <strong style={{color:"#f8fafc"}}>Videófájl elemzése – Facebook helyett is</strong>
+          <small style={{color:"#9eacc3"}}>Válassz ki egy MP4/MOV videót a Fájlokból vagy Fotókból. A Gemini a videó képkockáiból készít magyar receptjavaslatot. Külön hangrészlet feltöltésével a beszéd is elemezhető.</small>
           <input type="file" accept="video/*,.mp4,.mov,.m4v" aria-label="Videófájl kiválasztása" onChange={e=>setSelectedVideo(e.target.files?.[0]||null)} style={{maxWidth:"100%",color:"#eee"}}/>
-          <small style={{color:"#c1b6df"}}>Opcionális hangsáv: ha külön MP3/M4A/WAV hangrészleted is van (max. 2 MB), azt a képekkel együtt elemezzük.</small>
+          <small style={{color:"#9eacc3"}}>Opcionális hangsáv: ha külön MP3/M4A/WAV hangrészleted is van (max. 2 MB), azt a képekkel együtt elemezzük.</small>
           <input type="file" accept="audio/*,.m4a,.mp3,.wav,.aac" aria-label="Opcionális hangrészlet" onChange={e=>setSelectedAudio(e.target.files?.[0]||null)} style={{maxWidth:"100%",color:"#eee"}}/>
           <button type="button" className={styles.run} disabled={!selectedVideo||busy} onClick={()=>void analyzeLocalVideo()}><span>▣</span><strong>{busy?"Feldolgozás…":"Kiválasztott videó elemzése"}</strong><span>→</span></button>
         </div>
@@ -577,7 +553,7 @@ export default function MotaImportPage() {
         </section>
       )}
 
-      <footer className={styles.footer}>MOTA Import v0.6.1</footer>
-    </main>
+      <footer className={styles.footer}>Tudáskönyvtár · Hozzáadás</footer>
+    </main></KnowledgeShell>
   );
 }
