@@ -1,0 +1,1 @@
+export const foodPics={recipe:"/images/library/recipe.jpg",technology:"/images/library/technology.jpg",sources:"/images/library/sources.jpg",studio:"/images/library/studio.jpg",soup:"/images/library/studio.jpg",main:"/images/library/main.jpg",starter:"/images/library/starter.jpg",dessert:"/images/library/dessert.jpg"} as const;
