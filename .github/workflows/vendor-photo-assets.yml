@@ -1,0 +1,53 @@
+name: Vendor stable photo assets
+on:
+  push:
+    branches: [feature/secure-school-link-20261014]
+    paths: [.github/workflows/vendor-photo-assets.yml]
+permissions:
+  contents: write
+jobs:
+  vendor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/secure-school-link-20261014
+          persist-credentials: true
+      - name: Download and verify source photos
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p public/images/library
+          ids=(
+            "recipe:1504674900247-0877df9cc836"
+            "technology:1577219491135-ce391730fb2c"
+            "sources:1556911220-bff31c812dba"
+            "studio:1547592180-85f173990554"
+            "main:1544025162-d76694265947"
+            "starter:1512621776951-a57141f2eefd"
+            "dessert:1488477181946-6428a0291777"
+            "math:1635070041078-e363dbe005cb"
+            "school:1509062522246-3755977927d7"
+            "students:1427504494785-3a9ca7044f45"
+            "planning:1434030216411-0b793f4b4173"
+          )
+          for entry in "${ids[@]}"; do
+            name="${entry%%:*}"
+            id="${entry#*:}"
+            path="public/images/library/${name}.jpg"
+            curl --fail --location --silent --show-error --retry 3 --connect-timeout 15 --max-time 55 "https://images.unsplash.com/photo-${id}?w=1000&q=78&fit=crop&fm=jpg" -o "$path"
+            test "$(wc -c < "$path")" -gt 8000
+            file "$path" | grep -qi 'JPEG image data'
+            echo "OK $name"
+          done
+      - name: Commit verified photo files without triggering preview deployments
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/images/library
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "assets: vendor verified local photography for iOS cards [skip ci]"
+          git push origin HEAD:feature/secure-school-link-20261014
