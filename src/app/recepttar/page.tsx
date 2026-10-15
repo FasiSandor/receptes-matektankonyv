@@ -1,7 +1,8 @@
 "use client";
+import {foodPics} from "@/lib/knowledge-images";
 import PhotoHero from "@/components/PhotoHero";
 import {useEffect,useMemo,useState} from "react";
-import KnowledgeShell,{foodPics} from "@/components/KnowledgeShell";
+import KnowledgeShell from "@/components/KnowledgeShell";
 import {listLibraryItems,updateLibraryItem,deleteLibraryItem,type LibraryItem} from "../mota-import/library";
 const APPROVED="recepttar:approved";
 const groups=[["Levesek",foodPics.soup],["Főételek",foodPics.main],["Előételek",foodPics.starter],["Desszertek",foodPics.dessert],["Köretek",foodPics.studio],["Mártások / krémek",foodPics.technology],["Tészták / pékáruk",foodPics.recipe],["Egyéb",foodPics.sources]] as const;
