@@ -19,6 +19,22 @@ const problems:Problem[]=[
 {id:"m12-1",grade:"12",topic:"Statisztika",question:"Mi a 2, 4, 4, 10 számok átlaga?",choices:["4","5","6","20"],answer:1,explanation:"Az összeg 20, az elemszám 4, ezért az átlag 20/4=5."},
 {id:"m12-2",grade:"12",topic:"Valószínűség",question:"Két szabályos érme feldobásakor mennyi az esélye, hogy pontosan egy fej lesz?",choices:["1/4","1/2","3/4","1"],answer:1,explanation:"A négy azonos esélyű eset: FF, FI, IF, II; pontosan egy fej két esetben szerepel."},
 {id:"m12-3",grade:"12",topic:"Függvények",question:"Hol van az f(x)=x²−4 függvény zérushelye?",choices:["−4 és 4","csak 2","−2 és 2","nincs"],answer:2,explanation:"x²−4=0 ⇒ x²=4 ⇒ x=−2 vagy x=2."}
+{id:"m9-5",grade:"9",topic:"Százalékszámítás",question:"Egy 8000 Ft-os termék ára 25%-kal csökken. Mennyi az új ár?",choices:["2000 Ft","6000 Ft","7000 Ft","7500 Ft"],answer:1,explanation:"A kedvezmény 8000 × 0,25 = 2000 Ft, tehát az új ár 6000 Ft."},
+{id:"m9-6",grade:"9",topic:"Algebra",question:"Oldd meg: 5(x−2)=20",choices:["x=2","x=4","x=6","x=8"],answer:2,explanation:"Oszd el 5-tel: x−2=4, majd adj hozzá 2-t: x=6."},
+{id:"m9-7",grade:"9",topic:"Geometria",question:"Mekkora egy 7 cm és 4 cm oldalú téglalap területe?",choices:["11 cm²","22 cm²","28 cm²","34 cm²"],answer:2,explanation:"A terület 7 × 4 = 28 cm²."},
+{id:"m9-8",grade:"9",topic:"Statisztika",question:"Mi a 2, 7, 9 számok mediánja?",choices:["2","6","7","9"],answer:2,explanation:"Rendezett sorozatban a középső elem 7."},
+{id:"m10-4",grade:"10",topic:"Függvények",question:"Hol metszi az f(x)=3x+6 grafikonja az x-tengelyt?",choices:["x=−3","x=−2","x=2","x=6"],answer:1,explanation:"A zérushelyhez 3x+6=0, tehát x=−2."},
+{id:"m10-5",grade:"10",topic:"Algebra",question:"Mennyi (x−4)(x+4)?",choices:["x²−16","x²+16","x²−8x+16","2x²−16"],answer:0,explanation:"Két tag összegének és különbségének szorzata: a²−b²."},
+{id:"m10-6",grade:"10",topic:"Geometria",question:"Mennyi egy 3 cm sugarú kör kerülete?",choices:["3π cm","6π cm","9π cm","12π cm"],answer:1,explanation:"K=2πr=2π×3=6π cm."},
+{id:"m10-7",grade:"10",topic:"Százalékszámítás",question:"Egy mennyiség 20%-os növelés után 120. Mennyi volt eredetileg?",choices:["80","96","100","110"],answer:2,explanation:"Az eredeti mennyiség 1,2-szerese 120: 120 / 1,2 = 100."},
+{id:"m11-4",grade:"11",topic:"Sorozatok",question:"A 2, 6, 18, 54, ... mértani sorozat 5. tagja?",choices:["108","126","144","162"],answer:3,explanation:"A hányados 3, így 54 × 3 = 162."},
+{id:"m11-5",grade:"11",topic:"Trigonometria",question:"Mennyi cos 60° pontos értéke?",choices:["0","1/2","√3/2","1"],answer:1,explanation:"A nevezetes szög koszinusza cos 60° = 1/2."},
+{id:"m11-6",grade:"11",topic:"Valószínűség",question:"Zsákban 3 piros és 2 kék golyó van. Visszatevés nélkül egyet húzunk. Mennyi a piros esélye?",choices:["2/5","3/5","1/2","3/2"],answer:1,explanation:"Összesen 5 golyó közül 3 piros, tehát a valószínűség 3/5."},
+{id:"m11-7",grade:"11",topic:"Függvények",question:"Mennyi a f(x)=x²−6x+9 minimumértéke?",choices:["−9","0","3","9"],answer:1,explanation:"f(x)=(x−3)², ezért a minimum 0, az x=3 helyen."},
+{id:"m12-4",grade:"12",topic:"Statisztika",question:"Mi a 3, 3, 4, 5, 10 adatok módusza?",choices:["3","4","5","10"],answer:0,explanation:"A 3 fordul elő a legtöbbször, ezért ez a módusz."},
+{id:"m12-5",grade:"12",topic:"Valószínűség",question:"Mekkora annak az esélye, hogy két szabályos dobókocka összege 7?",choices:["1/12","1/9","1/6","1/3"],answer:2,explanation:"36 egyformán valószínű rendezett kimenetből 6 ad 7-es összeget, azaz 6/36=1/6."},
+{id:"m12-6",grade:"12",topic:"Függvények",question:"Hány zérushelye van az f(x)=x²+1 függvénynek a valós számok között?",choices:["0","1","2","végtelen"],answer:0,explanation:"Minden valós x-re x²≥0, így x²+1 mindig pozitív."},
+{id:"m12-7",grade:"12",topic:"Geometria",question:"Egy 2 cm élű kocka térfogata?",choices:["4 cm³","6 cm³","8 cm³","12 cm³"],answer:2,explanation:"A kocka térfogata a³=2³=8 cm³."},
 ];
 type Stored=Record<string,number>;
 const storageKey="tk-matematika-gyakorlas-v1";
