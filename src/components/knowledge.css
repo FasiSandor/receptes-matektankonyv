@@ -10,30 +10,7 @@
 .kh-tile:focus-visible,.kh-btn:focus-visible{outline:3px solid #22d3ee;outline-offset:3px}
 @media(max-width:470px){.kh-photo-hero{min-height:178px;border-radius:17px}.kh-photo-hero-inner{padding:22px 17px 18px}.kh-photo-hero h1{font-size:29px}}
 
-.kh-photo-hero-image{position:absolute!important;inset:0;width:100%;height:100%;object-fit:cover}
-.kh-photo-hero-shade{position:absolute;inset:0;background:linear-gradient(90deg,rgba(5,10,20,.91),rgba(5,10,20,.62) 56%,rgba(5,10,20,.14))}
-
-/* iOS Safari: explicitly contain photographs independent of intrinsic image dimensions. */
-.kh-grid .kh-tile{min-width:0}
-.kh-tile-media{width:100%;height:auto;aspect-ratio:1.55;overflow:hidden;position:relative;background:#172033}
-.kh-grid .kh-tile .kh-tile-media img{position:absolute!important;inset:0!important;display:block!important;width:100%!important;height:100%!important;max-height:100%!important;object-fit:cover!important;aspect-ratio:auto!important}
-.kh-photo-hero{height:215px;min-height:0}
-.kh-photo-hero .kh-photo-hero-image{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;object-fit:cover!important}
+/* Stable local media: one background layer per card, no overlay or IMG stacking. */
+.kh-tile-media{width:100%;aspect-ratio:1.55;background-color:#172033;background-position:center;background-repeat:no-repeat;background-size:cover;display:block}
+.kh-photo-hero{height:215px;min-height:0;background-position:center;background-size:cover;background-repeat:no-repeat}
 @media(max-width:470px){.kh-photo-hero{height:178px}}
-
-/* Never display an empty gray rectangle when external photography fails. */
-.kh-tile-media .kh-image-fallback{position:absolute;inset:0;display:grid;place-items:center;background:radial-gradient(circle at 75% 25%,#2563eb55,transparent 60%),linear-gradient(135deg,#172033,#0b182c);color:#60a5fa}
-.kh-image-fallback span{font-size:clamp(30px,5vw,55px);opacity:.6;text-shadow:0 0 30px #3b82f677}
-
-/* Safari fallback: the local JPEG is painted as the media background even if
- * WebKit fails to paint the absolutely positioned HTML image. */
-.kh-tile-media{background-position:center!important;background-size:cover!important;background-repeat:no-repeat!important}
-.kh-photo-hero{background-position:center!important;background-size:cover!important;background-repeat:no-repeat!important}
-
-/* Photo layer order: never allow a fallback placeholder to cover a loaded
-   JPEG or the card's background image on iOS Safari. */
-.kh-tile-media .kh-image-fallback{display:none!important}
-.kh-grid .kh-tile .kh-tile-media img{position:relative!important;inset:auto!important;width:100%!important;height:100%!important;object-fit:cover!important;z-index:1}
-.kh-photo-hero .kh-photo-hero-image{z-index:0}
-.kh-photo-hero .kh-photo-hero-shade{z-index:1}
-.kh-photo-hero .kh-photo-hero-inner{z-index:2}
