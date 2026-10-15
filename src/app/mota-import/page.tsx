@@ -108,7 +108,7 @@ function List({ title, items }: { title: string; items?: string[] }) {
 export default function MotaImportPage() {
   const [url, setUrl] = useState("");
   const [source, setSource] = useState<Source>("auto");
-  const [action, setAction] = useState<Action>("both");
+  const [action, setAction] = useState<Action>("extract");
   const [focus, setFocus] = useState<Focus>("all");
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState("");
@@ -375,6 +375,7 @@ export default function MotaImportPage() {
   return (
     <KnowledgeShell><main className={styles.shell}><PhotoHero title="Új anyag hozzáadása" subtitle="LINK · VIDEÓ · RECEPT · FORRÁSTÁR" image="/images/library/sources.jpg"/><div className={styles.quickLinks}><Link href="/recepttar">Recepttár</Link><Link href="/mota-import/gyujtemeny">Forrástár</Link></div>
       <section className={styles.card}>
+        <details className={styles.moreOptions}><summary>Forrás és platform beállítása</summary>
         <div className={styles.sectionLabel}>⌁ <span>Forrás kiválasztása</span></div>
         <div className={styles.sourceRow}>
           {sources.map((item) => (
@@ -399,6 +400,7 @@ export default function MotaImportPage() {
           <small className={styles.detectedSource}>Felismerve: {sources.find((item) => item.key === detectedSource)?.label}</small>
         ) : null}
 
+        </details>
         <label className={styles.fieldLabel}>Videó linkje</label>
         <div className={styles.urlField}>
           <span className={styles.linkGlyph}>⌁</span>
@@ -416,6 +418,7 @@ export default function MotaImportPage() {
           ) : null}
         </div>
 
+        <details className={styles.moreOptions}><summary>Részletes feldolgozási beállítások</summary>
         <div className={styles.fieldLabel}>Mit szeretnél tenni?</div>
         <div className={styles.actionGrid}>
           {actions.map((item) => (
@@ -453,6 +456,7 @@ export default function MotaImportPage() {
           </div>
         )}
 
+        </details>
         <button className={styles.run} type="button" disabled={!canRun} onClick={run}>
           <span>✦</span>
           <strong>{busy ? "Dolgozom…" : action === "download" ? "Videó mentése" : action === "extract" ? "Kinyerés indítása" : "Kinyerés + mentés"}</strong>
