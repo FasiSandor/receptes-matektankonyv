@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import Image from "next/image";
 import {usePathname} from "next/navigation";
 import {useEffect,useState} from "react";
 import "./knowledge.css";
@@ -14,7 +15,7 @@ starter:"https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=900&q=82
 dessert:"https://images.unsplash.com/photo-1488477181946-6428a0291777?w=900&q=82"
 };
 export function Tile({href,title,subtitle,image}:{href:string;title:string;subtitle:string;image:string}){
-return <Link className="kh-tile" href={href}><img src={image} alt=""/><div className="kh-tile-body"><div className="kh-tile-title">{title}</div><div className="kh-muted" style={{marginTop:6}}>{subtitle}</div></div></Link>}
+return <Link className="kh-tile" href={href}><Image src={image} alt="" width={900} height={580} sizes="(max-width: 650px) 50vw, (max-width: 1100px) 45vw, 560px" /><div className="kh-tile-body"><div className="kh-tile-title">{title}</div><div className="kh-muted" style={{marginTop:6}}>{subtitle}</div></div></Link>}
 export default function KnowledgeShell({children}:{children:React.ReactNode}){
 const pathname=usePathname();const [theme,setTheme]=useState("dark");
 useEffect(()=>{setTheme(localStorage.getItem("tudastar-theme")==="light"?"light":"dark")},[]);
