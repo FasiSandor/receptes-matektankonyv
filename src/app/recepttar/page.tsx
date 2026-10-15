@@ -1,5 +1,5 @@
-import PhotoHero from "@/components/PhotoHero";
 "use client";
+import PhotoHero from "@/components/PhotoHero";
 import {useEffect,useMemo,useState} from "react";
 import KnowledgeShell,{foodPics} from "@/components/KnowledgeShell";
 import {listLibraryItems,updateLibraryItem,deleteLibraryItem,type LibraryItem} from "../mota-import/library";
