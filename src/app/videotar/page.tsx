@@ -68,7 +68,7 @@ export default function SharedVideoLibrary(){
  }
  return <KnowledgeShell><main className="kh-video-workspace" style={{background:colors.bg,color:"#f8fafc",minHeight:"100vh",padding:"22px 16px 60px",fontFamily:"system-ui,-apple-system,sans-serif"}}>
  <div style={{maxWidth:1000,margin:"0 auto"}}>
- <Link href="/" style={{color:colors.blue,fontWeight:700,textDecoration:"none"}}>← Receptes és Matektankönyv</Link>
+ <Link href="/matematika" style={{color:colors.blue,fontWeight:700,textDecoration:"none"}}>← Matematika főoldalra</Link>
  <header style={{margin:"22px 0"}}><div style={{color:"#22d3ee",fontSize:12,fontWeight:800,letterSpacing:2}}>KÖZÖS MÉDIATÁR</div><h1 style={{fontSize:"clamp(27px,5vw,40px)",margin:"8px 0"}}>Videókönyvtár</h1><p style={{color:colors.muted,lineHeight:1.55}}>Gasztronómiai és matematikai videók egy helyen. A matekos videók önálló tananyag-kiegészítők is lehetnek, nem kell tanmenethez kapcsolni őket.</p></header>
  <div style={{display:"flex",gap:8,marginBottom:18}}>
  {([["matematika","∑ Matematika"],["gasztronomia","♨ Gasztronómia"]] as const).map(([id,label])=><button key={id} type="button" onClick={()=>{setSubject(id);setMsg("")}} style={{...btn,flex:1,background:subject===id?"#2563eb":"#172033",border:subject===id?"1px solid #60a5fa":"1px solid #334155"}}>{label}</button>)}

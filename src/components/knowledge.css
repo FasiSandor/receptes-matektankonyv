@@ -114,3 +114,11 @@
 .kh-root.light .kh-video-workspace>div>section,.kh-root.light .kh-video-workspace article{background:#fff!important;color:#142640!important;border-color:#a9c9e7!important}
 .kh-root.light .kh-video-workspace :is(input:not([type=checkbox]),select){background:#fff!important;color:#183451!important}
 @media(min-width:900px){.kh-root .kh-video-workspace{margin:0;padding-bottom:42px!important}}
+
+/* Clear, consistent wayfinding and visible mobile content at the floating dock */
+.kh-root .kh-video-workspace>div>a:first-child{display:inline-flex;align-items:center;min-height:40px;color:#79c7ff!important}
+.kh-root .kh-video-workspace>div>a:first-child:focus-visible{outline:3px solid #22d3ee;outline-offset:3px;border-radius:6px}
+.kh-root .kh-video-workspace{padding-bottom:calc(156px + env(safe-area-inset-bottom))!important}
+.kh-root.light .kh-video-workspace>div>a:first-child{color:#0754a7!important}
+.kh-root.light .kh-video-workspace>div>header p{color:#e6f4ff!important}
+.kh-root .kh-navbar{isolation:isolate}
