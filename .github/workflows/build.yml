@@ -175,6 +175,45 @@ jobs:
           retention-days: 7
 
 
+      - name: Unified add and library navigation visual smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run start -- --port 3214 >/tmp/knowledge-add.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
+          for i in $(seq 1 35); do
+            if curl -fsS http://127.0.0.1:3214/vendeglatas >/dev/null; then break; fi
+            sleep 1
+          done
+          node - <<'NODE'
+          const {chromium}=require('playwright');
+          (async()=>{
+            const browser=await chromium.launch({headless:true});
+            const page=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:2,isMobile:true,hasTouch:true});
+            await page.goto('http://127.0.0.1:3214/vendeglatas',{waitUntil:'networkidle'});
+            await page.getByRole('button',{name:'Új anyag hozzáadása'}).click();
+            if(!await page.getByRole('dialog',{name:'Új anyag hozzáadása'}).isVisible())throw Error('Global add sheet missing');
+            await page.getByRole('link',{name:/Link beillesztése/}).click();
+            await page.waitForURL('**/mota-import?mode=link');
+            if(!await page.getByRole('heading',{name:'Új anyag hozzáadása'}).isVisible())throw Error('Unified import header missing');
+            if(await page.getByText('MOTA Import',{exact:true}).count())throw Error('Legacy MOTA Import branding still visible');
+            if(!await page.getByRole('navigation',{name:'Fő navigáció'}).isVisible())throw Error('Global navigation missing in importer');
+            if(!await page.getByText('Részletes feldolgozási beállítások').isVisible())throw Error('Optional settings disclosure missing');
+            await page.screenshot({path:'mobile-unified-add.png',fullPage:true});
+            await page.goto('http://127.0.0.1:3214/mota-import/gyujtemeny',{waitUntil:'domcontentloaded'});
+            if(!await page.getByRole('heading',{name:'Forrástár'}).isVisible())throw Error('Source library header missing');
+            if(!await page.getByRole('navigation',{name:'Fő navigáció'}).isVisible())throw Error('Global navigation missing in source library');
+            console.log('Unified add, import and source library mobile routes: PASS');
+            await browser.close();
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mobile-unified-add
+          path: mobile-unified-add.png
+          retention-days: 7
       - name: School integration security regression (unauthenticated, no writes)
         shell: bash
         run: |
