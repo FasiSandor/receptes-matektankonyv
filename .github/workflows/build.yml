@@ -27,3 +27,23 @@ jobs:
           NODE
       - run: npm run lint
       - run: npm run build
+
+      - name: Smoke-test production server and local photo URLs
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run start -- --port 3210 >/tmp/knowledge-next.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
+          for i in $(seq 1 35); do
+            if curl --silent --fail http://127.0.0.1:3210/ >/dev/null; then break; fi
+            sleep 1
+          done
+          for name in recipe technology sources studio main starter dessert math school students planning; do
+            curl --fail --silent --show-error --output "/tmp/${name}.jpg" "http://127.0.0.1:3210/images/library/${name}.jpg"
+            file "/tmp/${name}.jpg" | grep -qi 'JPEG image data'
+            echo "HTTP 200, JPEG: ${name}"
+          done
+          curl --fail --silent --show-error --output /tmp/knowledge-vendeglatas.html http://127.0.0.1:3210/vendeglatas
+          grep -q '/images/library/recipe.jpg' /tmp/knowledge-vendeglatas.html
+          echo "Vendeglatas HTML includes local photo path"
