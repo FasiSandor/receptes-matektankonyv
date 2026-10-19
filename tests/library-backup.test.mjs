@@ -47,3 +47,13 @@ test("backup rejects duplicate source URLs to avoid overwriting entries",()=>{
  const backup=createLibraryBackup([item,item]);
  assert.throws(()=>parseLibraryBackup(JSON.stringify(backup)));
 });
+
+test("backup rejects oversized source links and recipe titles",()=>{
+ const backup=createLibraryBackup([item]);
+ backup.items[0].source_url="https://example.com/"+ "x".repeat(3000);
+ backup.items[0].result.source_url=backup.items[0].source_url;
+ assert.throws(()=>parseLibraryBackup(JSON.stringify(backup)));
+ const another=createLibraryBackup([item]);
+ another.items[0].result.title="x".repeat(5001);
+ assert.throws(()=>parseLibraryBackup(JSON.stringify(another)));
+});
