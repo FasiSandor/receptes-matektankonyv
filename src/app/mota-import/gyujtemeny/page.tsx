@@ -146,6 +146,7 @@ export default function CollectionPage() {
   const [quickUrl, setQuickUrl] = useState("");
   const [restorePreview,setRestorePreview] = useState<LibraryBackup|null>(null);
   const [restoreBusy,setRestoreBusy] = useState(false);
+  const [inspectBusy,setInspectBusy] = useState(false);
   const [restoreProgress,setRestoreProgress] = useState(0);
   const [backupBusy,setBackupBusy] = useState(false);
   const [restoreExisting,setRestoreExisting] = useState(0);
@@ -340,12 +341,13 @@ export default function CollectionPage() {
   async function inspectBackup(file:File) {
     if(restoreBusy)return;
     const inspection=++backupInspectionSequence.current;
+    setInspectBusy(true);
     setRestorePreview(null);
     setRestoreProgress(0);
     setRestoreErrors([]);
     setRestoreFailedEntries([]);
     setRestoreSummary(null);
-    if(file.size>50_000_000){setMessage("A mentés túl nagy.");return;}
+    if(file.size>50_000_000){setMessage("A mentés túl nagy.");setInspectBusy(false);return;}
     try{
       const parsed=parseLibraryBackup(await file.text());
       const current=await listLibraryItems();
@@ -355,12 +357,14 @@ export default function CollectionPage() {
       setRestorePreview(parsed);
       setMessage("Mentés ellenőrizve: "+parsed.item_count+" elem. Még semmi nem lett visszaállítva.");
     }catch(error){if(inspection===backupInspectionSequence.current)setMessage(error instanceof Error?error.message:"A mentés nem olvasható.");}
+    finally{if(inspection===backupInspectionSequence.current)setInspectBusy(false);}
   }
 
   async function restoreBackup() {
     if(!restorePreview||restoreBusy)return;
     if(!confirm("Hozzáadod a mentésből a hiányzó elemeket? A meglévő rekordokat változatlanul hagyjuk. A videófájlok nem állnak vissza."))return;
     backupInspectionSequence.current++;
+    setInspectBusy(false);
     setRestoreBusy(true);
     setRestoreProgress(0);
     setRestoreErrors([]);
@@ -824,7 +828,8 @@ export default function CollectionPage() {
           <strong>Biztonsági mentés visszaállítása</strong>
           <small>Először ellenőrizzük a JSON fájlt. Az adatok csak a jóváhagyásod után kerülnek a gyűjteménybe. A meglévő rekordokat változatlanul hagyjuk; csak a hiányzó elemeket adjuk hozzá.</small>
           <input type="file" disabled={restoreBusy} accept=".json,application/json" aria-label="Gyűjtemény biztonsági mentés kiválasztása" onChange={e=>{const file=e.target.files?.[0];if(file)void inspectBackup(file);e.target.value="";}}/>
-          {restorePreview&&<div><p>{restorePreview.item_count} ellenőrzött elem · {restorePreview.exported_at}</p><p>{restoreExisting} meglévő elem kihagyva, {restorePreview.item_count-restoreExisting} új elem kerülhet be.</p>{restoreBusy&&<p role="status">Visszaállítás: {restoreProgress}/{restorePreview.item_count}</p>}<button type="button" disabled={restoreBusy} onClick={()=>void restoreBackup()}>{restoreBusy?"Visszaállítás folyamatban…":"Jóváhagyás és visszaállítás"}</button><button type="button" disabled={restoreBusy} onClick={()=>setRestorePreview(null)}>Mégse</button></div>}
+          {inspectBusy&&<p role="status">A mentési fájl ellenőrzése és a meglévő receptek összehasonlítása folyamatban…</p>}
+          {restorePreview&&<div><p>{restorePreview.item_count} ellenőrzött elem · {restorePreview.exported_at}</p><p>{restoreExisting} meglévő elem kihagyva, {restorePreview.item_count-restoreExisting} új elem kerülhet be.</p>{restoreBusy&&<p role="status">Visszaállítás: {restoreProgress}/{restorePreview.item_count}</p>}<button type="button" disabled={restoreBusy||inspectBusy} onClick={()=>void restoreBackup()}>{restoreBusy?"Visszaállítás folyamatban…":"Jóváhagyás és visszaállítás"}</button><button type="button" disabled={restoreBusy} onClick={()=>setRestorePreview(null)}>Mégse</button></div>}
         </div>
       </section>
 
