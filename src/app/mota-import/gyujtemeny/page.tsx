@@ -14,7 +14,7 @@ import {
   updateLibraryItem,
 } from "../library";
 import styles from "./Collection.module.css";
-import { createLibraryBackup, parseLibraryBackup, type LibraryBackup } from "../library-backup";
+import { createLibraryBackupParts, parseLibraryBackup, type LibraryBackup } from "../library-backup";
 
 type Filter = "all" | "favorite" | "competition" | "to_try" | "tested";
 
@@ -324,20 +324,24 @@ export default function CollectionPage() {
     setBackupBusy(true);
     try {
       const allItems=await listLibraryItems();
-      const data=createLibraryBackup(allItems);
-      const json=JSON.stringify(data,null,2);
-      parseLibraryBackup(json);
-      const blob=new Blob([json],{type:"application/json"});
-      if(blob.size>50_000_000)throw Error("A biztonsági mentés meghaladja az 50 MB-os visszaállítási korlátot.");
-      const href=URL.createObjectURL(blob);
-      const a=document.createElement("a");
-      a.href=href;
-      a.download="tudaskonyvtar-gyujtemeny-"+new Date().toISOString().slice(0,10)+".json";
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(()=>URL.revokeObjectURL(href),1000);
-      setMessage(data.item_count+" elem biztonsági mentése elkészült. A videófájlok nem részei a JSON mentésnek.");
+      const parts=createLibraryBackupParts(allItems);
+      if(parts.length>1&&!confirm("A teljes gyűjtemény "+parts.length+" külön JSON-fájlba fér el. Mindegyiket töltsd le és őrizd meg. A böngésző kérheti a több fájl letöltésének engedélyezését. Folytatod?"))return;
+      const date=new Date().toISOString().slice(0,10);
+      for(const [index,data] of parts.entries()){
+        const json=JSON.stringify(data,null,2);
+        parseLibraryBackup(json);
+        const blob=new Blob([json],{type:"application/json"});
+        if(blob.size>50_000_000)throw Error("A biztonsági mentés egyik része túl nagy.");
+        const href=URL.createObjectURL(blob);
+        const a=document.createElement("a");
+        a.href=href;
+        a.download="tudaskonyvtar-gyujtemeny-"+date+(parts.length>1?"-"+String(index+1).padStart(2,"0")+"-of-"+String(parts.length).padStart(2,"0"):"")+".json";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(()=>URL.revokeObjectURL(href),1000);
+      }
+      setMessage(allItems.length+" elem teljes biztonsági mentése "+parts.length+" JSON-fájlba elkészült. Többrészes mentésnél minden fájlt őrizz meg és külön állíts vissza. A videófájlok nem részei a JSON mentésnek.");
     } catch(error) {
       setMessage(error instanceof Error?error.message:"A mentés nem sikerült.");
     }finally{setBackupBusy(false);}
