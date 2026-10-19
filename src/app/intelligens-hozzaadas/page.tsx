@@ -109,7 +109,7 @@ export default function IntelligentAdd() {
         try{
           const result:MotaResult={source_url:entry.url,title:entry.title.trim(),platform:"weboldal",hungarian_summary:[entry.description,entry.author?"Szerző: "+entry.author:"",entry.recipeYield?"Adag: "+entry.recipeYield:"",entry.prepTime?"Előkészítési idő: "+entry.prepTime:"",entry.cookTime?"Sütési/főzési idő: "+entry.cookTime:"",entry.calories?"Kalória (forrás szerint): "+entry.calories:""].filter(Boolean).join("\n"),thumbnail_url:entry.image,recipe_group:entry.category|| (entry.kind==="recipe"?"Webes receptek":"Szakmai cikkek"),ingredient_tags:entry.keywords.slice(0,20),ingredients:entry.ingredients.map(x=>({name:x,note:x})),method_steps:entry.steps,content_tags:["weboldal",...(entry.cuisine?[entry.cuisine]:[])]};
           const inserted=await restoreLibraryItemIfMissing(result);
-          if(!inserted){setBatchResults(old=>old.map(x=>x.url===entry.url?{...x,error:"Ez a forrás már szerepel a gyűjteményben; a meglévő recept változatlan maradt.",errorPhase:"save",selected:false}:x));failedCount++;setBatchProgress(savedCount+failedCount);continue;}
+          if(!inserted){setBatchResults(old=>old.map(x=>x.url===entry.url?{...x,error:"Ez a forrás már szerepel a gyűjteményben; a meglévő recept változatlan maradt.",errorPhase:"duplicate",selected:false}:x));failedCount++;setBatchProgress(savedCount+failedCount);continue;}
           savedCount++;
           setBatchResults(old=>old.map(x=>x.url===entry.url?{...x,selected:false,saved:true}:x));
         }catch(e){failedCount++;setBatchResults(old=>old.map(x=>x.url===entry.url?{...x,error:e instanceof Error?e.message:"Mentési hiba",errorPhase:"save",selected:true}:x));}
