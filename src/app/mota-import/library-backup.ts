@@ -86,6 +86,12 @@ export function parseLibraryBackup(raw:string):LibraryBackup {
  */
 export function createLibraryBackupParts(items:LibraryItem[]):LibraryBackup[] {
   if(items.length===0)return [createLibraryBackup([])];
+  // Detect duplicate source URLs before partitioning, not just within each part.
+  const seen=new Set<string>();
+  for(const item of items){
+    if(seen.has(item.source_url))throw Error("A gyűjtemény ugyanazt a forráslinket többször tartalmazza.");
+    seen.add(item.source_url);
+  }
   const parts:LibraryBackup[]=[];
   function append(group:LibraryItem[]):void {
     const backup=createLibraryBackup(group);
