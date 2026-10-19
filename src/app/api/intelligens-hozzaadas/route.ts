@@ -39,10 +39,24 @@ function extract(html:string,url:string){
   const attrs=Object.fromEntries([...tag.matchAll(/([\w:-]+)\s*=\s*(["'])(.*?)\2/g)].map(m=>[m[1].toLowerCase(),m[3]]));
   return ["description","og:description"].includes((attrs.name||attrs.property||"").toLowerCase())?attrs.content||"":"";
  }).find(Boolean)||"";
+ const metaValue=(name:string)=>metaTags.map(tag=>{
+  const attrs=Object.fromEntries([...tag.matchAll(/([\\w:-]+)\\s*=\\s*(["'])(.*?)\\2/g)].map(m=>[m[1].toLowerCase(),m[3]]));
+  return (attrs.name||attrs.property||"").toLowerCase()===name?attrs.content||"":"";
+ }).find(Boolean)||"";
+ const authorValue=r?.author;
+ const author=typeof authorValue==="string"?clean(authorValue):Array.isArray(authorValue)?authorValue.map(a=>typeof a==="object"&&a?str((a as Record<string,unknown>).name):"").filter(Boolean).join(", "):authorValue&&typeof authorValue==="object"?str((authorValue as Record<string,unknown>).name):"";
+ const yieldValue=r?.recipeYield;
+ const yieldText=Array.isArray(yieldValue)?yieldValue.map(str).filter(Boolean).join(", "):typeof yieldValue==="number"?String(yieldValue):str(yieldValue);
+ const time=(v:unknown)=>typeof v==="string"&&/^P(?:\\d+D)?(?:T(?:\\d+H)?(?:\\d+M)?(?:\\d+S)?)?$/i.test(v)?v:"";
+ const imageValue=r?.image;
+ const imageRaw=typeof imageValue==="string"?imageValue:Array.isArray(imageValue)?imageValue.find(v=>typeof v==="string")||"":imageValue&&typeof imageValue==="object"?str((imageValue as Record<string,unknown>).url):"";
+ const imageCandidate=imageRaw||metaValue("og:image")||metaValue("twitter:image");
+ let image="";
+ try{const candidate=new URL(imageCandidate,url);if(["http:","https:"].includes(candidate.protocol)&&!candidate.username&&!candidate.password)image=candidate.toString();}catch{/* no image */}
  const body=html.replace(/<(script|style|nav|footer|header|aside|form|iframe|noscript|svg)\b[^>]*>[\s\S]*?<\/\1>/gi," ");
  const main=body.match(/<(article|main)\b[^>]*>([\s\S]*?)<\/\1>/i)?.[2]||body;
  const paragraphs=[...main.matchAll(/<(p|h[1-6]|li)\b[^>]*>([\s\S]*?)<\/\1>/gi)].map(m=>clean(m[2])).filter(s=>s.length>=25&&!/^(cookie|privacy|hirdetés|feliratkozás|subscribe)/i.test(s)).slice(0,120);
- return {kind:recipe?"recipe":"article",source_url:url,title:title.slice(0,300),description:str(r?.description)||clean(metaDescription),ingredients:Array.isArray(r?.recipeIngredient)?r.recipeIngredient.map(ingredient).filter(Boolean):[],steps:steps(r?.recipeInstructions),paragraphs};
+ return {kind:recipe?"recipe":"article",source_url:url,title:title.slice(0,300),description:str(r?.description)||clean(metaDescription),author,recipeYield:yieldText,prepTime:time(r?.prepTime),cookTime:time(r?.cookTime),totalTime:time(r?.totalTime),image,ingredients:Array.isArray(r?.recipeIngredient)?r.recipeIngredient.map(ingredient).filter(Boolean):[],steps:steps(r?.recipeInstructions),paragraphs};
 }
 async function download(raw:string){
  let current=raw;
