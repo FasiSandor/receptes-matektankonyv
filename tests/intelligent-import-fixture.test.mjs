@@ -60,3 +60,13 @@ test("OpenGraph image fallback accepts HTTP images but rejects dangerous schemes
  const bad=extract('<meta property="og:image" content="javascript:alert(1)">',"https://example.com/article");
  assert.equal(bad.image,"");
 });
+
+test("recipe category, cuisine, keywords and source-declared calories are extracted",()=>{
+ const html=`<script type="application/ld+json">{"@type":"Recipe","name":"Leves","recipeCategory":"Levesek","recipeCuisine":"Magyar","keywords":"hagyományos, ünnepi","nutrition":{"@type":"NutritionInformation","calories":"230 kcal"}}</script>`;
+ const result=extract(html,"https://example.com/leves");
+ assert.equal(result.category,"Levesek");
+ assert.equal(result.cuisine,"Magyar");
+ assert.equal(result.calories,"230 kcal");
+ assert.equal(result.keywords.length,2);
+ assert.equal(result.keywords[1],"ünnepi");
+});
