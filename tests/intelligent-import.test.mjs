@@ -29,3 +29,5 @@ test("stale asynchronous import responses cannot overwrite a changed source",()=
  assert.match(ui,/id!==requestId\.current\|\|source!==currentUrl\.current\.trim\(\)/);
  assert.match(ui,/if\(id===requestId\.current\)setBusy\(false\)/);
 });
+
+test('common Hungarian quantities are stored separately and original text retained',()=>{ assert.match(ui,/kg\|dkg\|g\|mg\|l\|dl\|cl\|ml\|db/); assert.match(ui,/amount:/); assert.match(ui,/note:original/); });
