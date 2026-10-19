@@ -53,7 +53,9 @@ export function parseLibraryBackup(raw:string):LibraryBackup {
     let parsed:URL;
     try{parsed=new URL(url);}catch{throw Error("Hibás forráslink a mentésben.");}
     if(!["https:","http:"].includes(parsed.protocol)||parsed.username||parsed.password)throw Error("Nem támogatott forráslink a mentésben.");
+    if(!parsed.hostname||url.length>2048)throw Error("Érvénytelen vagy túl hosszú forráslink.");
     if(item.result.source_url!==url||typeof item.result.title!=="string"||!item.result.title.trim())throw Error("Hiányzó vagy eltérő receptadat a mentésben.");
+    if(item.result.title.length>5000)throw Error("Túl hosszú cím a mentésben.");
     if(seen.has(url))throw Error("A mentés ugyanazt a forráslinket többször tartalmazza.");
     seen.add(url);
     if(!["saved","to_try","tested"].includes(item.status))throw Error("Ismeretlen mentési állapot.");
