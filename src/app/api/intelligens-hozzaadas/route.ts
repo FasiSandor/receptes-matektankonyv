@@ -44,7 +44,7 @@ async function download(raw:string){
   const {u,address}=await validate(current);
   const agent=new Agent({connect:{lookup:(_host,_opts,cb)=>cb(null,address,4),timeout:10000}});
   try{
-   const response=await fetchPinned(u.toString(),{dispatcher:agent,method:"GET",maxRedirections:0,headers:{"accept":"text/html,application/xhtml+xml","user-agent":"TudaskonyvtarImporter/1.0"},headersTimeout:10000,bodyTimeout:10000});
+   const response=await fetchPinned(u.toString(),{dispatcher:agent,method:"GET",headers:{"accept":"text/html,application/xhtml+xml","user-agent":"TudaskonyvtarImporter/1.0"},headersTimeout:10000,bodyTimeout:10000});
    const status=response.statusCode;
    if(status>=300&&status<400){const location=response.headers.location;if(typeof location!=="string")throw Error("Hibás átirányítás.");response.body.destroy();current=new URL(location,u).toString();continue;}
    if(status!==200){response.body.destroy();throw Error("A forrásoldal nem érhető el (HTTP "+status+").");}
