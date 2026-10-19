@@ -25,7 +25,7 @@ async function validate(raw:string) {
 const entityMap:Record<string,string>={"&amp;":"&","&quot;":String.fromCharCode(34),"&apos;":String.fromCharCode(39),"&lt;":"<","&gt;":">","&nbsp;":" "};
 function decode(s:string) {return s.replace(/&#(x[0-9a-f]+|\d+);/gi,(_m,v:string)=>{const n=v[0].toLowerCase()==="x"?parseInt(v.slice(1),16):Number(v);return n>0&&n<=0x10ffff?String.fromCodePoint(n):"";}).replace(/&(?:amp|quot|apos|lt|gt|nbsp);/gi,m=>(entityMap[m.toLowerCase()]||m));}
 function clean(s:string){return decode(s.replace(/<[^>]+>/g," ")).replace(/\s+/g," ").trim();}
-function extract(html:string,url:string){
+export function extract(html:string,url:string){
  let recipe:Record<string,unknown>|null=null;
  function walk(v:unknown):void{if(!v||typeof v!=="object")return;if(Array.isArray(v)){v.forEach(walk);return;}const o=v as Record<string,unknown>;const t=o["@type"];if((typeof t==="string"&&t.toLowerCase()==="recipe")||(Array.isArray(t)&&t.includes("Recipe"))){recipe=o;return;}walk(o["@graph"]);walk(o.mainEntity);walk(o.itemListElement);}
  for(const m of html.matchAll(/<script\b(?=[^>]*type\s*=\s*["']application\/ld\+json["'])[^>]*>([\s\S]*?)<\/script>/gi)){try{walk(JSON.parse(m[1]));if(recipe)break;}catch{/* skip invalid JSON-LD */}}
