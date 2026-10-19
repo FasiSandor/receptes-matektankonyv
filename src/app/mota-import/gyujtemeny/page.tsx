@@ -306,9 +306,10 @@ export default function CollectionPage() {
     }
   }
 
-  function downloadBackup() {
+  async function downloadBackup() {
     try {
-      const data=createLibraryBackup(items);
+      const allItems=await listLibraryItems();
+      const data=createLibraryBackup(allItems);
       const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
       const href=URL.createObjectURL(blob);
       const a=document.createElement("a");
@@ -444,7 +445,7 @@ export default function CollectionPage() {
         </div>
       </section>
 
-      <div style={{padding:"0 16px 12px"}}><button type="button" className={styles.catalogTool} onClick={downloadBackup} disabled={loading}>↓ Gyűjtemény biztonsági mentése (JSON)</button></div>
+      <div style={{padding:"0 16px 12px"}}><button type="button" className={styles.catalogTool} onClick={()=>void downloadBackup()} disabled={loading}>↓ Gyűjtemény biztonsági mentése (JSON)</button></div>
 
       <section className={styles.catalogTools}>
         <button type="button" className={sourceFilter !== "all" ? styles.catalogToolActive : styles.catalogTool} onClick={() => setSourceOpen(true)}>
