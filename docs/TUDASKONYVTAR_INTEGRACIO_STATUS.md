@@ -24,3 +24,12 @@ Ne módosítsuk a meglévő Supabase táblákat, kulcsokat és videókat; ne tö
 - `package.json`: `undici` hozzáadva.
 - **Kiadást blokkol:** a GitHub-módosításokhoz nem futott teljes Next.js build vagy éles webes próba. Nincs lockfile-frissítés. Az SSRF védelem, HTML-kódolás és rate limit további biztonsági tesztje szükséges. Az IPv6 címek jelenleg elutasítottak. A rate limit csak szerverpéldányonként működik. A PDF és a közösségi videók nem részei ennek az API-nak.
 - A production változat és az adatbázis változatlan. Ne merge-eljük ellenőrzés nélkül.
+
+## 2026-10-19 – Integrációs mérföldkő ellenőrzése
+- A korábbi automatikus HTML-import már be van kötve; a dokumentum fentebbi "még NINCS beépítve" mondata történeti állapot, nem a jelenlegi.
+- A GitHub Actions külön TypeScript-, Next.js build-, forráskód-, API-integrációs és recept-fixture teszteket futtat, Vercel-deploy nélkül.
+- A recept-hozzávalók szövegének mentése megőrzi az eredeti szöveget, a felismert mennyiség az opcionális amount mezőbe kerül.
+- A cikk meta leírását a HTML meta címkékből, több attribútumsorrenddel és idézőjelformával olvassa.
+- A kérés- és hálózati korlátok továbbra is további biztonsági auditot igényelnek; a memóriában tárolt limit nem globális.
+- Még hiányzik: valós külső URL-ekkel ellenőrzött végponttól végpontig import, a Supabase mentés és visszaolvasás igazolása, export/visszaállítás auditja, PDF és közösségi videók külön fejlesztése.
+- Production merge/deploy nincs engedélyezve.
