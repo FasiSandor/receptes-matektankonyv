@@ -44,3 +44,19 @@ test("OpenGraph description is extracted when standard metadata is missing",()=>
  const html='<title>Test</title><meta content="Konyhatechnológiai cikk" property="og:description">';
  assert.equal(extract(html,"https://example.com/article").description,"Konyhatechnológiai cikk");
 });
+
+test("structured recipe includes author, servings, times and absolute preview image",()=>{
+ const html=`<script type="application/ld+json">{"@type":"Recipe","name":"Töltött paprika","author":{"@type":"Person","name":"Teszt szakács"},"recipeYield":"4 adag","prepTime":"PT20M","cookTime":"PT45M","image":"/images/paprika.jpg","recipeIngredient":["4 db paprika"]}</script>`;
+ const result=extract(html,"https://example.com/recept");
+ assert.equal(result.author,"Teszt szakács");
+ assert.equal(result.recipeYield,"4 adag");
+ assert.equal(result.prepTime,"PT20M");
+ assert.equal(result.cookTime,"PT45M");
+ assert.equal(result.image,"https://example.com/images/paprika.jpg");
+});
+test("OpenGraph image fallback accepts HTTP images but rejects dangerous schemes",()=>{
+ const good=extract('<meta property="og:image" content="/assets/food.jpg">',"https://example.com/article");
+ assert.equal(good.image,"https://example.com/assets/food.jpg");
+ const bad=extract('<meta property="og:image" content="javascript:alert(1)">',"https://example.com/article");
+ assert.equal(bad.image,"");
+});
