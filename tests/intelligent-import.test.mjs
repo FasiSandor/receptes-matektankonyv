@@ -146,3 +146,10 @@ test("bulk retry distinguishes failed extraction from failed saving",()=>{
  assert.match(ui,/Mentési hibák újrapróbálása/);
  assert.match(ui,/!x\.saved&&x\.title\.trim\(\)/);
 });
+
+test("bulk import does not replace existing library recipes",()=>{
+ assert.match(ui,/restoreLibraryItemIfMissing\(result\)/);
+ assert.match(ui,/if\(!inserted\)/);
+ assert.match(ui,/errorPhase:"duplicate"/);
+ assert.match(ui,/meglévő recept változatlan maradt/);
+});
