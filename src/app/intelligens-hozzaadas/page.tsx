@@ -36,12 +36,13 @@ export default function IntelligentAdd() {
   const [batchBusy,setBatchBusy]=useState(false);
   const [batchProgress,setBatchProgress]=useState(0);
   const [batchMessage,setBatchMessage]=useState("");
+  const [batchMode,setBatchMode]=useState<"analyze"|"save"|null>(null);
   const batchAbort=useRef(false);
   async function analyzeBatch(retryOnly=false){
     if(batchBusy)return;
     const urls=retryOnly?batchResults.filter(x=>!!x.error&&!x.saved).map(x=>x.url):[...new Set(batchUrls.split(/\\r?\\n/).map(x=>x.trim()).filter(Boolean))];
     if(urls.length===0||urls.length>15){setBatchMessage("Adj meg 1–15 különálló forráslinket.");return;}
-    setBatchBusy(true);batchAbort.current=false;if(!retryOnly)setBatchResults([]);setBatchProgress(0);setBatchMessage("");
+    setBatchBusy(true);setBatchMode("analyze");batchAbort.current=false;if(!retryOnly)setBatchResults([]);setBatchProgress(0);setBatchMessage("");
     const results:BatchEntry[]=[];
     try{
       for(const url of urls){
@@ -52,16 +53,16 @@ export default function IntelligentAdd() {
           if(!response.ok)throw Error(data.error||"A feldolgozás sikertelen.");
           results.push({...emptyBatch(url),title:String(data.title||""),description:String(data.description||""),ingredients:Array.isArray(data.ingredients)?data.ingredients:[],steps:Array.isArray(data.steps)&&data.steps.length?data.steps:Array.isArray(data.paragraphs)?data.paragraphs:[],kind:data.kind==="recipe"?"recipe":"article",selected:true,author:String(data.author||""),recipeYield:String(data.recipeYield||""),prepTime:displayDuration(String(data.prepTime||"")),cookTime:displayDuration(String(data.cookTime||"")),image:String(data.image||""),category:String(data.category||""),cuisine:String(data.cuisine||""),calories:String(data.calories||""),keywords:Array.isArray(data.keywords)?data.keywords:[]});
         }catch(e){results.push({...emptyBatch(url),error:e instanceof Error?e.message:"Hiba"});}
-        setBatchResults(old=>retryOnly?old.map(x=>results.find(y=>y.url===x.url)||x):[...results]);setBatchProgress(results.length);
+        setBatchResults(old=>retryOnly?old.map(x=>results.find(y=>y.url===x.url)?{...x,...results.find(y=>y.url===x.url),saved:false}:x):[...results]);setBatchProgress(results.length);
       }
-    }finally{setBatchBusy(false);setBatchMessage(batchAbort.current?"A feldolgozás megszakítva. Az elkészült előnézetek megmaradtak.":"Feldolgozás kész. Ellenőrizd a találatokat mentés előtt.");}
+    }finally{setBatchBusy(false);setBatchMode(null);setBatchMessage(batchAbort.current?"A feldolgozás megszakítva. Az elkészült előnézetek megmaradtak.":"Feldolgozás kész. Ellenőrizd a találatokat mentés előtt.");}
   }
   async function saveBatch(){
     if(batchBusy)return;
-    const chosen=batchResults.filter(x=>x.selected&&!x.error&&x.title.trim());
+    const chosen=batchResults.filter(x=>x.selected&&!x.error&&!x.saved&&x.title.trim());
     if(!chosen.length){setBatchMessage("Nincs mentésre kijelölt, érvényes elem.");return;}
     if(!window.confirm(chosen.length+" kijelölt forrást mentünk a gyűjteménybe. Folytatod?"))return;
-    setBatchBusy(true);batchAbort.current=false;setBatchProgress(0);
+    setBatchBusy(true);setBatchMode("save");batchAbort.current=false;setBatchProgress(0);
     let savedCount=0;let failedCount=0;
     try{
       for(const entry of chosen){
@@ -71,10 +72,10 @@ export default function IntelligentAdd() {
           await saveLibraryResult(result);
           savedCount++;
           setBatchResults(old=>old.map(x=>x.url===entry.url?{...x,selected:false,saved:true}:x));
-        }catch{failedCount++;}
+        }catch(e){failedCount++;setBatchResults(old=>old.map(x=>x.url===entry.url?{...x,error:e instanceof Error?e.message:"Mentési hiba"}:x));}
         setBatchProgress(savedCount+failedCount);
       }
-    }finally{setBatchBusy(false);setBatchMessage(savedCount+" mentve, "+failedCount+" sikertelen."+(batchAbort.current?" Megszakítva; a nem mentett elemek kijelölve maradtak.":""));}
+    }finally{setBatchBusy(false);setBatchMode(null);setBatchMessage(savedCount+" mentve, "+failedCount+" sikertelen."+(batchAbort.current?" Megszakítva; a nem mentett elemek kijelölve maradtak.":""));}
   }
   const currentUrl=useRef("");
   const requestId=useRef(0);
@@ -152,10 +153,10 @@ export default function IntelligentAdd() {
       <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
         <button className="kh-btn secondary" disabled={batchBusy} onClick={()=>analyzeBatch()}>Linkek feldolgozása</button>
         <button className="kh-btn secondary" disabled={batchBusy||!batchResults.some(x=>x.error&&!x.saved)} onClick={()=>analyzeBatch(true)}>Sikertelen linkek újrapróbálása</button>
-        <button className="kh-btn" disabled={batchBusy||!batchResults.some(x=>x.selected&&!x.error&&x.title.trim())} onClick={saveBatch}>Kijelöltek mentése</button>
+        <button className="kh-btn" disabled={batchBusy||!batchResults.some(x=>x.selected&&!x.error&&!x.saved&&x.title.trim())} onClick={saveBatch}>Kijelöltek mentése</button>
         {batchBusy&&<button className="kh-btn secondary" onClick={()=>{batchAbort.current=true;setBatchMessage("Megszakítás kérve; a folyamatban lévő művelet még befejeződik.");}}>Megszakítás</button>}
       </div>
-      {batchBusy&&<p role="status">Feldolgozott elemek: {batchProgress}</p>}
+      {batchBusy&&<p role="status">{batchMode==="save"?"Mentési műveletek":"Feldolgozott linkek"}: {batchProgress}</p>}
       {batchMessage&&<p role="status" className="kh-muted">{batchMessage}</p>}
       {batchResults.map((entry,index)=><div key={entry.url} style={{border:"1px solid #334155",borderRadius:10,padding:12,display:"grid",gap:8}}>
         <label><input type="checkbox" checked={entry.selected} disabled={batchBusy||!!entry.error||entry.saved} onChange={e=>setBatchResults(old=>old.map((x,i)=>i===index?{...x,selected:e.target.checked}:x))}/> {entry.saved?"Mentve":entry.error?"Sikertelen":entry.kind==="recipe"?"Recept":"Cikk"} – {index+1}.</label>
