@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import KnowledgeShell from "@/components/KnowledgeShell";
 import {createBatchDraft,parseBatchDraft,type BatchDraftEntry} from "./batch-draft";
-import { saveLibraryResult, restoreLibraryItemIfMissing, type MotaResult } from "../mota-import/library";
+import { saveLibraryResult, restoreLibraryItemIfMissing, listLibraryItems, type MotaResult } from "../mota-import/library";
 
 function displayDuration(value:string):string {
  const match=/^P(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)?$/i.exec(value);
@@ -38,6 +38,8 @@ export default function IntelligentAdd() {
   const [batchProgress,setBatchProgress]=useState(0);
   const [batchMessage,setBatchMessage]=useState("");
   const [batchMode,setBatchMode]=useState<"analyze"|"save"|null>(null);
+  const [batchOnlyNew,setBatchOnlyNew]=useState(true);
+  const [batchSkipCount,setBatchSkipCount]=useState(0);
   const batchAbort=useRef(false);
   useEffect(()=>{
     if(!batchBusy)return;
@@ -81,11 +83,28 @@ export default function IntelligentAdd() {
     if(batchBusy)return;
     const urls=retryOnly?batchResults.filter(x=>!!x.error&&x.errorPhase==="analyze"&&!x.saved).map(x=>x.url):[...new Set(batchUrls.split(/\r?\n/).map(x=>x.trim()).filter(Boolean))];
     if(urls.length===0||urls.length>15){setBatchMessage("Adj meg 1–15 különálló forráslinket.");return;}
-    setDraftDirty(true);setBatchBusy(true);setBatchMode("analyze");batchAbort.current=false;if(!retryOnly)setBatchResults([]);setBatchProgress(0);setBatchMessage("");
+    setDraftDirty(true);setBatchBusy(true);setBatchMode("analyze");batchAbort.current=false;setBatchSkipCount(0);if(!retryOnly)setBatchResults([]);setBatchProgress(0);setBatchMessage("");
     const results:BatchEntry[]=[];
+    let existingUrls=new Set<string>();
+    if(!retryOnly&&batchOnlyNew){
+      try{
+        const existing=await listLibraryItems();
+        existingUrls=new Set(existing.map(x=>x.source_url));
+      }catch(e){
+        setBatchBusy(false);setBatchMode(null);
+        setBatchMessage("A meglévő gyűjtemény ellenőrzése nem sikerült. A biztonságos szűréshez próbáld újra: "+(e instanceof Error?e.message:"hiba"));
+        return;
+      }
+    }
     try{
       for(const url of urls){
         if(batchAbort.current)break;
+        if(existingUrls.has(url)){
+          results.push({...emptyBatch(url),error:"Már megtalálható a gyűjteményben.",errorPhase:"duplicate"});
+          setBatchSkipCount(n=>n+1);
+          setBatchResults([...results]);setBatchProgress(results.length);
+          continue;
+        }
         try{
           const response=await fetch("/api/intelligens-hozzaadas",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({url})});
           const data=await response.json();
@@ -189,6 +208,7 @@ export default function IntelligentAdd() {
       <h2>Több webcím feldolgozása</h2>
       <p className="kh-muted">Legfeljebb 15 recept- vagy cikklink soronként. Az eredményeket mentés előtt külön-külön ellenőrizheted, szerkesztheted és kijelölheted. Az eredeti egyedi hozzáadás változatlanul működik.</p>
       <label htmlFor="batchUrls">Forráslinkek, soronként egy</label>
+      <label><input type="checkbox" checked={batchOnlyNew} disabled={batchBusy} onChange={e=>setBatchOnlyNew(e.target.checked)}/> Már meglévő linkek kihagyása feldolgozás előtt (ajánlott)</label>
       <textarea id="batchUrls" style={field} rows={6} value={batchUrls} disabled={batchBusy} onChange={e=>{setBatchUrls(e.target.value);setDraftDirty(true);}} placeholder={"https://pelda.hu/recept-1\\nhttps://pelda.hu/recept-2"}/>
       <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
         <button className="kh-btn secondary" disabled={batchBusy} onClick={()=>analyzeBatch()}>Linkek feldolgozása</button>
@@ -200,6 +220,7 @@ export default function IntelligentAdd() {
         <button className="kh-btn" disabled={batchBusy||!batchResults.some(x=>x.selected&&!x.error&&!x.saved&&x.title.trim())} onClick={saveBatch}>Kijelöltek mentése</button>
         {batchBusy&&<button className="kh-btn secondary" onClick={()=>{batchAbort.current=true;setBatchMessage("Megszakítás kérve; a folyamatban lévő művelet még befejeződik.");}}>Megszakítás</button>}
       </div>
+      {batchSkipCount>0&&<p role="status">{batchSkipCount} meglévő forrás kihagyva.</p>}
       {batchBusy&&<p role="status">{batchMode==="save"?"Mentési műveletek":"Feldolgozott linkek"}: {batchProgress}</p>}
       {batchMessage&&<p role="status" className="kh-muted">{batchMessage}</p>}
       {batchResults.map((entry,index)=><div key={entry.url} style={{border:"1px solid #334155",borderRadius:10,padding:12,display:"grid",gap:8}}>
