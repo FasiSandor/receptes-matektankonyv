@@ -11,7 +11,7 @@ const code=ts.transpileModule(source,{compilerOptions:{target:ts.ScriptTarget.ES
 test("library pagination retrieves all records across three pages without truncation",async()=>{
  const calls=[];
  const rows=Array.from({length:1103},(_,i)=>({id:String(i),title:"Item "+i}));
- const sandbox={exports:{},URL,Date,JSON,TextEncoder,Uint8Array,crypto:webcrypto,localStorage:{getItem(){return "test-library-key-1234567890";}},fetch:async(url)=>{
+ const sandbox={exports:{},URL,Date,JSON,TextEncoder,Uint8Array,crypto:webcrypto,window:{},localStorage:{getItem(){return "test-library-key-1234567890";}},fetch:async(url)=>{
   const u=new URL(url);
   const offset=Number(u.searchParams.get("offset")||0);
   const limit=Number(u.searchParams.get("limit")||500);
@@ -26,14 +26,14 @@ test("library pagination retrieves all records across three pages without trunca
 });
 
 test("library pagination rejects malformed server responses",async()=>{
- const sandbox={exports:{},URL,Date,JSON,TextEncoder,Uint8Array,crypto:{getRandomValues(a){a.fill(7);return a;}},localStorage:{getItem(){return "test-library-key-1234567890";}},fetch:async()=>({ok:true,status:200,text:async()=>'{"unexpected":"object"}'})};
+ const sandbox={exports:{},URL,Date,JSON,TextEncoder,Uint8Array,crypto:webcrypto,localStorage:{getItem(){return "test-library-key-1234567890";}},fetch:async()=>({ok:true,status:200,text:async()=>'{"unexpected":"object"}'})};
  vm.runInNewContext(code,sandbox);
  await assert.rejects(()=>sandbox.exports.listLibraryItems(),/Hibás gyűjteményválasz/);
 });
 
 test("restore inserts missing records with ignore-duplicates rather than upsert",async()=>{
  const calls=[];
- const sandbox={exports:{},URL,Date,JSON,TextEncoder,Uint8Array,crypto:{getRandomValues(a){a.fill(7);return a;}},localStorage:{getItem(){return "test-library-key-1234567890";}},fetch:async(url,init)=>{
+ const sandbox={exports:{},URL,Date,JSON,TextEncoder,Uint8Array,crypto:webcrypto,localStorage:{getItem(){return "test-library-key-1234567890";}},fetch:async(url,init)=>{
   calls.push({url,init});
   return {ok:true,status:201,text:async()=>JSON.stringify([])};
  }};
