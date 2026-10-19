@@ -97,6 +97,7 @@ export function setLibraryKey(value: string) {
 }
 
 export async function hashLibraryKey(key = getLibraryKey()) {
+  if (key.trim().length < 20) throw new Error("Hiányzó vagy érvénytelen gyűjteménykulcs.");
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(key));
   return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, "0")).join("");
 }
@@ -112,6 +113,7 @@ function headers(key: string, extra: Record<string, string> = {}) {
 
 async function api(path: string, init: RequestInit = {}) {
   const key = getLibraryKey();
+  if (key.trim().length < 20) throw new Error("Hiányzó vagy érvénytelen gyűjteménykulcs.");
   const response = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
     ...init,
     headers: {
@@ -135,14 +137,19 @@ function encodeStoragePath(path: string) {
 }
 
 export async function uploadLibraryVideo(itemId: string, blob: Blob): Promise<string> {
+  if (blob.size === 0) throw new Error("Üres videófájl nem tölthető fel.");
   if (blob.size > MAX_VIDEO_BYTES) {
     throw new Error("A videó 50 MB-nál nagyobb, ezért a Gyűjteménybe csak az elemzés kerül elmentésre.");
   }
 
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(itemId)) {
+    throw new Error("Érvénytelen receptazonosító a videófeltöltéshez.");
+  }
   const key = getLibraryKey();
   const keyHash = await hashLibraryKey(key);
   const ext = blob.type === "video/quicktime" ? "mov" : blob.type === "video/webm" ? "webm" : "mp4";
-  const path = `${keyHash}/${itemId}.${ext}`;
+  // Use a unique object name: cleanup must never delete a pre-existing video.
+  const path = `${keyHash}/${itemId}-${crypto.randomUUID()}.${ext}`;
 
   const response = await fetch(
     `${SUPABASE_URL}/storage/v1/object/${VIDEO_BUCKET}/${encodeStoragePath(path)}`,
@@ -152,7 +159,7 @@ export async function uploadLibraryVideo(itemId: string, blob: Blob): Promise<st
         apikey: SUPABASE_KEY,
         "x-mota-library-key": key,
         "Content-Type": blob.type || "video/mp4",
-        "x-upsert": "true",
+        "x-upsert": "false",
       },
       body: blob,
     }
@@ -163,19 +170,29 @@ export async function uploadLibraryVideo(itemId: string, blob: Blob): Promise<st
     throw new Error(detail || `Videótárhely hiba (HTTP ${response.status})`);
   }
 
-  const rows = await api(`mota_import_items?id=eq.${encodeURIComponent(itemId)}`, {
-    method: "PATCH",
-    headers: { Prefer: "return=representation" },
-    body: JSON.stringify({ video_path: path, updated_at: new Date().toISOString() }),
-  }) as LibraryItem[];
-
-  if (!rows?.[0]) throw new Error("A videó feltöltődött, de nem sikerült a gyűjteményhez kapcsolni.");
-  return path;
+  try {
+    const rows = await api(`mota_import_items?id=eq.${encodeURIComponent(itemId)}`, {
+      method: "PATCH",
+      headers: { Prefer: "return=representation" },
+      body: JSON.stringify({ video_path: path, updated_at: new Date().toISOString() }),
+    }) as LibraryItem[];
+    if (!Array.isArray(rows) || rows.length !== 1 || rows[0].id !== itemId || rows[0].video_path !== path) {
+      throw new Error("A videó feltöltődött, de nem sikerült a gyűjteményhez kapcsolni.");
+    }
+    return path;
+  } catch (error) {
+    // Best-effort cleanup: do not conceal the original database error.
+    try { await deleteLibraryVideo(path); } catch { /* Report the linking error below. */ }
+    throw error;
+  }
 }
 
 export async function createLibraryVideoUrl(path: string, expiresIn = 3600): Promise<string> {
   if (!path) return "";
+  if (!Number.isInteger(expiresIn) || expiresIn < 60 || expiresIn > 3600) throw new Error("Érvénytelen videólink-lejárat.");
   const key = getLibraryKey();
+  const keyHash = await hashLibraryKey(key);
+  if (!path.startsWith(`${keyHash}/`)) return "";
   const response = await fetch(
     `${SUPABASE_URL}/storage/v1/object/sign/${VIDEO_BUCKET}/${encodeStoragePath(path)}`,
     {
@@ -199,7 +216,9 @@ export async function createLibraryVideoUrl(path: string, expiresIn = 3600): Pro
 export async function deleteLibraryVideo(path: string) {
   if (!path) return;
   const key = getLibraryKey();
-  await fetch(
+  const keyHash = await hashLibraryKey(key);
+  if (!path.startsWith(`${keyHash}/`)) throw new Error("A videó nem ehhez a gyűjteményhez tartozik.");
+  const response = await fetch(
     `${SUPABASE_URL}/storage/v1/object/${VIDEO_BUCKET}/${encodeStoragePath(path)}`,
     {
       method: "DELETE",
@@ -208,7 +227,11 @@ export async function deleteLibraryVideo(path: string) {
         "x-mota-library-key": key,
       },
     }
-  ).catch(() => undefined);
+  );
+  if (!response.ok && response.status !== 404) {
+    const detail = await response.text().catch(() => "");
+    throw new Error(detail || `A videó törlése nem sikerült (HTTP ${response.status}).`);
+  }
 }
 
 export async function saveLibraryResult(result: MotaResult): Promise<LibraryItem> {
@@ -270,8 +293,70 @@ export async function saveLibraryResult(result: MotaResult): Promise<LibraryItem
   return rows[0];
 }
 
+/** Restore only new records. The database unique key prevents replacing an existing item. */
+export async function restoreLibraryItemIfMissing(result:MotaResult, metadata?:Pick<LibraryItem,"favorite"|"for_competition"|"status"|"note"|"tags">):Promise<LibraryItem|null> {
+  const keyHash=await hashLibraryKey(getLibraryKey());
+  const rows=await api("mota_import_items?on_conflict=library_key_hash,source_url",{
+    method:"POST",
+    headers:{Prefer:"resolution=ignore-duplicates,return=representation"},
+    body:JSON.stringify({
+      library_key_hash:keyHash,
+      source_url:result.source_url,
+      title:result.title,
+      platform:result.platform||"",
+      uploader:result.uploader||"",
+      source_page_name:result.source_page_name||result.uploader||"",
+      source_page_url:result.source_page_url||"",
+      thumbnail_url:result.thumbnail_url||"",
+      recipe_group:result.recipe_group||"Egyéb",
+      ingredient_tags:result.ingredient_tags||[],
+      content_tags:result.content_tags||[],
+      language_detected:result.language_detected||"",
+      hungarian_summary:result.hungarian_summary||"",
+      original_transcript:result.original_transcript||"",
+      hungarian_translation:result.hungarian_translation||"",
+      ingredients:result.ingredients||[],
+      method_steps:result.method_steps||[],
+      techniques:result.techniques||[],
+      plating:result.plating||[],
+      equipment:result.equipment||[],
+      chef_tips:result.chef_tips||[],
+      competition_ideas:result.competition_ideas||[],
+      tags:result.tags||[],
+      raw_result:result,
+      ...(metadata?{favorite:metadata.favorite,for_competition:metadata.for_competition,status:metadata.status,note:metadata.note,tags:metadata.tags}:{}),
+      updated_at:new Date().toISOString()
+    })
+  }) as LibraryItem[]|null;
+  return rows?.[0]||null;
+}
+
+/** Read only source URLs for duplicate preflight; avoids downloading entire recipe bodies. */
+export async function listLibrarySourceUrls(): Promise<string[]> {
+  const urls:string[]=[];
+  const PAGE_SIZE=500;
+  for(let offset=0;offset<100000;offset+=PAGE_SIZE){
+    const page=await api("mota_import_items?select=source_url&order=created_at.desc,id.desc&limit="+PAGE_SIZE+"&offset="+offset) as Array<{source_url:string}>;
+    if(!Array.isArray(page))throw Error("Hibás gyűjteményválasz.");
+    for(const row of page){
+      if(!row||typeof row.source_url!=="string")throw Error("Hibás gyűjtemény-forráslink.");
+      urls.push(row.source_url);
+    }
+    if(page.length<PAGE_SIZE)return urls;
+  }
+  throw Error("A gyűjtemény túl nagy az automatikus ellenőrzéshez.");
+}
+
 export async function listLibraryItems(): Promise<LibraryItem[]> {
-  return await api("mota_import_items?select=*&order=created_at.desc&limit=500") as LibraryItem[];
+  const result:LibraryItem[]=[];
+  const PAGE_SIZE=500;
+  for(let offset=0;offset<100000;offset+=PAGE_SIZE){
+    const page=await api("mota_import_items?select=*&order=created_at.desc,id.desc&limit="+PAGE_SIZE+"&offset="+offset) as LibraryItem[];
+    if(!Array.isArray(page))throw Error("Hibás gyűjteményválasz.");
+    result.push(...page);
+    if(page.length<PAGE_SIZE)return result;
+  }
+  throw Error("A gyűjtemény túl nagy az automatikus betöltéshez.");
 }
 
 export async function updateLibraryItem(id: string, patch: Partial<Pick<LibraryItem,
@@ -283,14 +368,20 @@ export async function updateLibraryItem(id: string, patch: Partial<Pick<LibraryI
     body: JSON.stringify({ ...patch, updated_at: new Date().toISOString() }),
   }) as LibraryItem[];
 
-  if (!rows?.[0]) throw new Error("A módosítás nem sikerült.");
+  if (!Array.isArray(rows) || rows.length !== 1 || rows[0].id !== id) {
+    throw new Error("A recept módosítása nem igazolható.");
+  }
   return rows[0];
 }
 
 export async function deleteLibraryItem(id: string, videoPath = "") {
-  if (videoPath) await deleteLibraryVideo(videoPath);
-  await api(`mota_import_items?id=eq.${encodeURIComponent(id)}`, {
+  // Keep the attached video intact if deleting the library record fails.
+  const deleted = await api(`mota_import_items?id=eq.${encodeURIComponent(id)}`, {
     method: "DELETE",
-    headers: { Prefer: "return=minimal" },
-  });
+    headers: { Prefer: "return=representation" },
+  }) as LibraryItem[];
+  if (!Array.isArray(deleted) || deleted.length !== 1 || deleted[0].id !== id) {
+    throw new Error("A recept törlése nem igazolható; a videót változatlanul hagytuk.");
+  }
+  if (videoPath) await deleteLibraryVideo(videoPath);
 }

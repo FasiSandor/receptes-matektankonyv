@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   createLibraryVideoUrl,
+  restoreLibraryItemIfMissing,
   deleteLibraryItem,
   getLibraryKey,
   LibraryItem,
@@ -13,6 +14,7 @@ import {
   updateLibraryItem,
 } from "../library";
 import styles from "./Collection.module.css";
+import { createLibraryBackupParts, parseLibraryBackup, type LibraryBackup } from "../library-backup";
 
 type Filter = "all" | "favorite" | "competition" | "to_try" | "tested";
 
@@ -142,6 +144,15 @@ export default function CollectionPage() {
   const [showTop, setShowTop] = useState(false);
   const [quickOpen, setQuickOpen] = useState(false);
   const [quickUrl, setQuickUrl] = useState("");
+  const [restorePreview,setRestorePreview] = useState<LibraryBackup|null>(null);
+  const [restoreBusy,setRestoreBusy] = useState(false);
+  const [inspectBusy,setInspectBusy] = useState(false);
+  const [restoreProgress,setRestoreProgress] = useState(0);
+  const [backupBusy,setBackupBusy] = useState(false);
+  const [restoreExisting,setRestoreExisting] = useState(0);
+  const [restoreErrors,setRestoreErrors] = useState<string[]>([]);
+  const [restoreFailedEntries,setRestoreFailedEntries] = useState<LibraryBackup["items"]>([]);
+  const [restoreSummary,setRestoreSummary] = useState<{added:number;skipped:number;failed:number;pending:number}|null>(null);
 
   async function reload() {
     try {
@@ -155,6 +166,13 @@ export default function CollectionPage() {
   }
 
   useEffect(() => { void reload(); }, []);
+
+  useEffect(() => {
+    if(!restoreBusy)return;
+    const warn=(event:BeforeUnloadEvent)=>{event.preventDefault();event.returnValue="";};
+    window.addEventListener("beforeunload",warn);
+    return ()=>window.removeEventListener("beforeunload",warn);
+  },[restoreBusy]);
 
   useEffect(() => {
     const onScroll = () => setShowTop(window.scrollY > 420);
@@ -301,6 +319,143 @@ export default function CollectionPage() {
     }
   }
 
+  async function downloadBackup() {
+    if(backupBusy)return;
+    setBackupBusy(true);
+    try {
+      const allItems=await listLibraryItems();
+      const parts=createLibraryBackupParts(allItems);
+      if(parts.length>1&&!confirm("A teljes gyűjtemény "+parts.length+" külön JSON-fájlba fér el. Mindegyiket töltsd le és őrizd meg. A böngésző kérheti a több fájl letöltésének engedélyezését. Folytatod?"))return;
+      const date=new Date().toISOString().slice(0,10);
+      for(const [index,data] of parts.entries()){
+        const json=JSON.stringify(data,null,2);
+        parseLibraryBackup(json);
+        const blob=new Blob([json],{type:"application/json"});
+        if(blob.size>50_000_000)throw Error("A biztonsági mentés egyik része túl nagy.");
+        const href=URL.createObjectURL(blob);
+        const a=document.createElement("a");
+        a.href=href;
+        a.download="tudaskonyvtar-gyujtemeny-"+date+(parts.length>1?"-"+String(index+1).padStart(2,"0")+"-of-"+String(parts.length).padStart(2,"0"):"")+".json";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(()=>URL.revokeObjectURL(href),1000);
+      }
+      setMessage(allItems.length+" elem teljes biztonsági mentése "+parts.length+" JSON-fájlba elkészült. Többrészes mentésnél minden fájlt őrizz meg és külön állíts vissza. A videófájlok nem részei a JSON mentésnek.");
+    } catch(error) {
+      setMessage(error instanceof Error?error.message:"A mentés nem sikerült.");
+    }finally{setBackupBusy(false);}
+  }
+
+  const backupInspectionSequence = useRef(0);
+  const restoreStopRequested = useRef(false);
+  const [restoreStopping,setRestoreStopping] = useState(false);
+
+  async function inspectBackup(file:File) {
+    if(restoreBusy)return;
+    const inspection=++backupInspectionSequence.current;
+    setInspectBusy(true);
+    setRestorePreview(null);
+    setRestoreProgress(0);
+    setRestoreErrors([]);
+    setRestoreFailedEntries([]);
+    setRestoreSummary(null);
+    if(file.size>50_000_000){setMessage("A mentés túl nagy.");setInspectBusy(false);return;}
+    try{
+      const parsed=parseLibraryBackup(await file.text());
+      const current=await listLibraryItems();
+      if(inspection!==backupInspectionSequence.current)return;
+      const urls=new Set(current.map(item=>item.source_url));
+      setRestoreExisting(parsed.items.filter(entry=>urls.has(entry.source_url)).length);
+      setRestorePreview(parsed);
+      setMessage("Mentés ellenőrizve: "+parsed.item_count+" elem. Még semmi nem lett visszaállítva.");
+    }catch(error){if(inspection===backupInspectionSequence.current)setMessage(error instanceof Error?error.message:"A mentés nem olvasható.");}
+    finally{if(inspection===backupInspectionSequence.current)setInspectBusy(false);}
+  }
+
+  async function restoreBackup() {
+    if(!restorePreview||restoreBusy)return;
+    if(!confirm("Hozzáadod a mentésből a hiányzó elemeket? A meglévő rekordokat változatlanul hagyjuk. A videófájlok nem állnak vissza."))return;
+    backupInspectionSequence.current++;
+    setInspectBusy(false);
+    restoreStopRequested.current=false;
+    setRestoreStopping(false);
+    setRestoreBusy(true);
+    setRestoreProgress(0);
+    setRestoreErrors([]);
+    setRestoreFailedEntries([]);
+    setRestoreSummary(null);
+    let added=0;
+    let skipped=0;
+    const failed:string[]=[];
+    const failedEntries:LibraryBackup["items"]=[];
+    let stopped=false;
+    try{
+      for(const [index,entry] of restorePreview.items.entries()){
+        if(restoreStopRequested.current){stopped=true;failedEntries.push(...restorePreview.items.slice(index));break;}
+        try{
+          const saved=await restoreLibraryItemIfMissing(entry.result,{favorite:entry.favorite,for_competition:entry.for_competition,status:entry.status,note:entry.note,tags:entry.tags});
+          if(saved)added++;
+          else skipped++;
+        }catch(error){
+          failed.push(entry.result.title+" ("+(error instanceof Error?error.message:"hiba")+")");
+          failedEntries.push(entry);
+        }
+        setRestoreProgress(index+1);
+      }
+      setRestoreErrors(failed);
+      setRestoreFailedEntries(failedEntries);
+      setRestoreSummary({added,skipped,failed:failed.length,pending:stopped?failedEntries.length-failed.length:0});
+      if(!failed.length&&!stopped)setRestorePreview(null);
+      setMessage((stopped?"Megszakítva. A már hozzáadott elemek megmaradnak. A feldolgozatlan elemek újrapróbálhatók. ":"")+added+" új elem hozzáadva, "+skipped+" meglévő elem kihagyva, "+failed.length+" hiba."+(failed.length?" Sikertelen: "+failed.slice(0,5).join("; "):""));
+    }finally{
+      setRestoreBusy(false);
+      setRestoreStopping(false);
+      try{await reload();}catch(error){setMessage("A visszaállítás befejeződött, de a lista frissítése nem sikerült: "+String(error));}
+    }
+  }
+
+  function downloadRemainingBackup() {
+    if(restoreBusy||restoreFailedEntries.length===0)return;
+    try{
+      const remainder:LibraryBackup={
+        format:"tudaskonyvtar-library-v1",
+        exported_at:new Date().toISOString(),
+        item_count:restoreFailedEntries.length,
+        items:restoreFailedEntries
+      };
+      // Repartition remaining entries so every download is independently restorable.
+      const parts:LibraryBackup[]=[];
+      const makeParts=(entries:LibraryBackup["items"]):void=>{
+        const part:LibraryBackup={...remainder,item_count:entries.length,items:entries};
+        const json=JSON.stringify(part,null,2);
+        if(entries.length<=10000&&new Blob([json]).size<=50_000_000){
+          parseLibraryBackup(json);
+          parts.push(part);
+          return;
+        }
+        if(entries.length===1)throw Error("Egyetlen hátralévő recept meghaladja a mentési korlátot.");
+        const mid=Math.floor(entries.length/2);
+        makeParts(entries.slice(0,mid));
+        makeParts(entries.slice(mid));
+      };
+      makeParts(restoreFailedEntries);
+      if(parts.length>1&&!confirm("A hátralévő receptek "+parts.length+" külön mentésbe férnek. Mindegyiket töltsd le. Folytatod?"))return;
+      for(const [index,part] of parts.entries()){
+        const blob=new Blob([JSON.stringify(part,null,2)],{type:"application/json"});
+        const href=URL.createObjectURL(blob);
+        const link=document.createElement("a");
+        link.href=href;
+        link.download="tudaskonyvtar-hatralevo-"+new Date().toISOString().slice(0,10)+(parts.length>1?"-"+String(index+1).padStart(2,"0")+"-of-"+String(parts.length).padStart(2,"0"):"")+".json";
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(()=>URL.revokeObjectURL(href),1000);
+      }
+      setMessage(remainder.item_count+" feldolgozatlan vagy hibás recept "+parts.length+" külön mentése elkészült.");
+    }catch(error){setMessage(error instanceof Error?error.message:"A hátralévő elemek mentése nem sikerült.");}
+  }
+
   async function copyKey() {
     const key = getLibraryKey();
     await navigator.clipboard.writeText(key);
@@ -308,6 +463,7 @@ export default function CollectionPage() {
   }
 
   function importKey() {
+    if(restoreBusy||inspectBusy||backupBusy){setMessage("A gyűjteménykulcs nem cserélhető mentés vagy visszaállítás közben.");return;}
     const next = prompt("Illeszd be a másik eszköz MOTA Import gyűjteménykulcsát:");
     if (!next) return;
     try {
@@ -387,6 +543,8 @@ export default function CollectionPage() {
           ))}
         </div>
       </section>
+
+      <div style={{padding:"0 16px 12px"}}><button type="button" className={styles.catalogTool} onClick={()=>void downloadBackup()} disabled={loading||backupBusy}>{backupBusy?"Mentés előkészítése…":"↓ Gyűjtemény biztonsági mentése (JSON)"}</button></div>
 
       <section className={styles.catalogTools}>
         <button type="button" className={sourceFilter !== "all" ? styles.catalogToolActive : styles.catalogTool} onClick={() => setSourceOpen(true)}>
@@ -721,6 +879,21 @@ export default function CollectionPage() {
         </div>
       ) : null}
 
+      {restoreFailedEntries.length>0&&!restoreBusy&&<button type="button" onClick={downloadRemainingBackup}>Hátralévő {restoreFailedEntries.length} recept letöltése JSON-ként</button>}
+      {restoreFailedEntries.length>0&&!restoreBusy&&<button type="button" onClick={()=>{setRestorePreview(previous=>previous?{...previous,items:restoreFailedEntries,item_count:restoreFailedEntries.length}:null);setRestoreExisting(0);setRestoreFailedEntries([]);setRestoreErrors([]);setRestoreSummary(null);setMessage("A sikertelen elemek újrapróbálásra előkészítve. Jóváhagyás után indul a visszaállítás.");}}>A {restoreFailedEntries.length} sikertelen vagy feldolgozatlan elem folytatása</button>}
+
+      {restoreSummary&&<section aria-label="Visszaállítás eredménye"><p role="status">Visszaállítás eredménye: {restoreSummary.added} új, {restoreSummary.skipped} kihagyott, {restoreSummary.failed} hibás, {restoreSummary.pending} feldolgozatlan elem.</p>{restoreErrors.length>0&&<details><summary>Hibás elemek részletei ({restoreErrors.length})</summary><ul>{restoreErrors.map((error,index)=><li key={index}>{error}</li>)}</ul></details>}</section>}
+
+      <section className={styles.device}>
+        <div style={{padding:16,display:"grid",gap:10}}>
+          <strong>Biztonsági mentés visszaállítása</strong>
+          <small>Először ellenőrizzük a JSON fájlt. Az adatok csak a jóváhagyásod után kerülnek a gyűjteménybe. A meglévő rekordokat változatlanul hagyjuk; csak a hiányzó elemeket adjuk hozzá.</small>
+          <input type="file" disabled={restoreBusy} accept=".json,application/json" aria-label="Gyűjtemény biztonsági mentés kiválasztása" onChange={e=>{const file=e.target.files?.[0];if(file)void inspectBackup(file);e.target.value="";}}/>
+          {inspectBusy&&<p role="status">A mentési fájl ellenőrzése és a meglévő receptek összehasonlítása folyamatban…</p>}
+          {restorePreview&&<div><p>{restorePreview.item_count} ellenőrzött elem · {restorePreview.exported_at}</p><p>{restoreExisting} meglévő elem kihagyva, {restorePreview.item_count-restoreExisting} új elem kerülhet be.</p>{restoreBusy&&<p role="status">Visszaállítás: {restoreProgress}/{restorePreview.item_count}{restoreStopping?" · Megszakítás a jelenlegi elem után…":""}</p>}{restoreBusy&&<button type="button" disabled={restoreStopping} onClick={()=>{restoreStopRequested.current=true;setRestoreStopping(true);}}>Visszaállítás megszakítása</button>}<button type="button" disabled={restoreBusy||inspectBusy} onClick={()=>void restoreBackup()}>{restoreBusy?"Visszaállítás folyamatban…":"Jóváhagyás és visszaállítás"}</button><button type="button" disabled={restoreBusy} onClick={()=>setRestorePreview(null)}>Mégse</button></div>}
+        </div>
+      </section>
+
       <section className={styles.device}>
         <div className={styles.deviceIntro}>
           <div className={styles.deviceIcon}>▣</div>
@@ -732,7 +905,7 @@ export default function CollectionPage() {
         </div>
         <div className={styles.deviceButtons}>
           <button type="button" onClick={() => void copyKey()}>▤ &nbsp; Kulcs másolása</button>
-          <button type="button" onClick={importKey}>⌗ &nbsp; Kulcs beillesztése</button>
+          <button type="button" disabled={restoreBusy||inspectBusy||backupBusy} onClick={importKey}>⌗ &nbsp; Kulcs beillesztése</button>
         </div>
       </section>
 

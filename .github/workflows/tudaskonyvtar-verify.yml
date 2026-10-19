@@ -1,0 +1,44 @@
+name: Tudaskonyvtar verification
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - work/tudaskonyvtar-integracio-20261019
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install dependencies
+        run: |
+          if [ -f package-lock.json ]; then npm ci; else npm install --no-audit --no-fund; fi
+      - name: TypeScript
+        run: npm run lint
+      - name: Production build without Vercel
+        run: npm run build
+      - name: Importer regression tests
+        run: node --test tests/intelligent-import.test.mjs
+
+      - name: Local API integration tests (no deploy)
+        run: node --test tests/intelligent-import-api.test.mjs
+
+      - name: Recipe extraction fixture tests
+        run: node --test tests/intelligent-import-fixture.test.mjs
+
+      - name: Library backup validation tests
+        run: node --test tests/library-backup.test.mjs
+
+      - name: Library pagination behavior tests
+        run: node --test tests/library-pagination.test.mjs
+
+      - name: Library restore integration tests (isolated mock, no deploy)
+        run: node --test tests/library-restore-integration.test.mjs
