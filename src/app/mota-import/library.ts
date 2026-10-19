@@ -205,7 +205,7 @@ export async function deleteLibraryVideo(path: string) {
   const key = getLibraryKey();
   const keyHash = await hashLibraryKey(key);
   if (!path.startsWith(`${keyHash}/`)) throw new Error("A videó nem ehhez a gyűjteményhez tartozik.");
-  await fetch(
+  const response = await fetch(
     `${SUPABASE_URL}/storage/v1/object/${VIDEO_BUCKET}/${encodeStoragePath(path)}`,
     {
       method: "DELETE",
@@ -214,7 +214,11 @@ export async function deleteLibraryVideo(path: string) {
         "x-mota-library-key": key,
       },
     }
-  ).catch(() => undefined);
+  );
+  if (!response.ok && response.status !== 404) {
+    const detail = await response.text().catch(() => "");
+    throw new Error(detail || `A videó törlése nem sikerült (HTTP ${response.status}).`);
+  }
 }
 
 export async function saveLibraryResult(result: MotaResult): Promise<LibraryItem> {
