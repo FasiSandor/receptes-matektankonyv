@@ -30,3 +30,6 @@ jobs:
 
       - name: Local API integration tests (no deploy)
         run: node --test tests/intelligent-import-api.test.mjs
+
+      - name: Recipe extraction fixture tests
+        run: node --test tests/intelligent-import-fixture.test.mjs
