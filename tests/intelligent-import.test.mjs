@@ -23,3 +23,9 @@ test("structured recipe ingredients and instruction lists are handled",()=>{
  assert.match(api,/walk\(o\.itemListElement\)/);
  assert.match(api,/const ingredient=/);
 });
+
+test("stale asynchronous import responses cannot overwrite a changed source",()=>{
+ assert.match(ui,/requestId\.current\+=1/);
+ assert.match(ui,/id!==requestId\.current\|\|source!==currentUrl\.current\.trim\(\)/);
+ assert.match(ui,/if\(id===requestId\.current\)setBusy\(false\)/);
+});
