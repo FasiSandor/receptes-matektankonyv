@@ -85,3 +85,11 @@ test("backup restore offers explicit retry of failed entries only",()=>{
  assert.match(page,/sikertelen elem újrapróbálása/);
  assert.match(page,/Jóváhagyás után indul a visszaállítás/);
 });
+
+test("backup file inspection exposes progress and prevents premature restore",()=>{
+ const page=readFileSync(new URL("../src/app/mota-import/gyujtemeny/page.tsx",import.meta.url),"utf8");
+ assert.match(page,/const \[inspectBusy,setInspectBusy\] = useState\(false\)/);
+ assert.match(page,/setInspectBusy\(true\)/);
+ assert.match(page,/setInspectBusy\(false\)/);
+ assert.match(page,/disabled=\{restoreBusy\|\|inspectBusy\} onClick=\{\(\)=>void restoreBackup\(\)\}/);
+});
