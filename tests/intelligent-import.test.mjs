@@ -137,3 +137,11 @@ test("bulk import retains metadata, supports selective retry and marks saved ent
  assert.match(ui,/Sikertelen linkek újrapróbálása/);
  assert.match(ui,/Megszakítás/);
 });
+
+test("bulk retry distinguishes failed extraction from failed saving",()=>{
+ assert.match(ui,/errorPhase:"analyze"/);
+ assert.match(ui,/errorPhase:"save"/);
+ assert.match(ui,/x\.errorPhase==="analyze"/);
+ assert.match(ui,/Mentési hibák újrapróbálása/);
+ assert.match(ui,/!x\.saved&&x\.title\.trim\(\)/);
+});
