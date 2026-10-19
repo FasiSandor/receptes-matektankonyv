@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
-import {transform} from "esbuild";
+import ts from "typescript";
 import vm from "node:vm";
 
 const source=readFileSync(new URL("../src/app/api/intelligens-hozzaadas/route.ts",import.meta.url),"utf8");
@@ -9,8 +9,8 @@ const start=source.indexOf("const entityMap:");
 const end=source.indexOf("async function download(");
 assert.ok(start>=0&&end>start);
 const snippet=source.slice(start,end).replace("export function extract(","function extract(");
-const compiled=await transform(snippet+"\nglobalThis.extract=extract;",{loader:"ts",format:"iife",target:"es2022"});
-const sandbox={};vm.runInNewContext(compiled.code,sandbox);
+const compiled=ts.transpileModule(snippet+"\nglobalThis.extract=extract;",{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.None}});
+const sandbox={};vm.runInNewContext(compiled.outputText,sandbox);
 const extract=sandbox.extract;
 
 test("Recipe JSON-LD extracts ingredient quantities and nested HowToSteps",()=>{
