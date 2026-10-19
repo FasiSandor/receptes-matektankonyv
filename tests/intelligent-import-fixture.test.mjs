@@ -32,3 +32,5 @@ test("Article fallback uses title and main content",()=>{
  assert.equal(result.title,"Szakmai cikk");
  assert.equal(result.paragraphs.length,1);
 });
+
+test('meta description fallback',()=>{ const r=extract('<title>Article</title><meta name="description" content="Cooking summary">','https://example.com'); assert.equal(r.description,'Cooking summary'); });
