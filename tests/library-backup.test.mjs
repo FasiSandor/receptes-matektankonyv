@@ -5,9 +5,9 @@ import ts from "typescript";
 import vm from "node:vm";
 
 const source=readFileSync(new URL("../src/app/mota-import/library-backup.ts",import.meta.url),"utf8");
-const code=ts.transpileModule(source+"\nglobalThis.backupApi={createLibraryBackup,parseLibraryBackup,BACKUP_FORMAT};",{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.None}}).outputText.replace(/export \{\};?/g,"");
-const sandbox={URL,Date,JSON,Error,exports:{}};vm.runInNewContext(code,sandbox);
-const {createLibraryBackup,parseLibraryBackup,BACKUP_FORMAT}=sandbox.backupApi;
+const code=ts.transpileModule(source+"\nglobalThis.backupApi={createLibraryBackup,createLibraryBackupParts,parseLibraryBackup,BACKUP_FORMAT};",{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.None}}).outputText.replace(/export \{\};?/g,"");
+const sandbox={URL,Date,JSON,Error,TextEncoder,exports:{}};vm.runInNewContext(code,sandbox);
+const {createLibraryBackup,createLibraryBackupParts,parseLibraryBackup,BACKUP_FORMAT}=sandbox.backupApi;
 const item={source_url:"https://example.com/recipe",title:"Teszt recept",platform:"weboldal",recipe_group:"Főétel",hungarian_summary:"Leírás",ingredients:[{name:"liszt",amount:"20 dkg"}],method_steps:["Keverjük össze."],content_tags:[],ingredient_tags:[],tags:[],raw_result:{title:"Régi cím",source_url:"https://example.com/recipe",platform:"weboldal"},favorite:true,for_competition:false,status:"tested",note:"Saját megjegyzés"};
 test("backup exports current visible recipe fields and preferences",()=>{
  const backup=createLibraryBackup([item]);
@@ -98,4 +98,20 @@ test("backup rejects malformed extended recipe fields and ingredient details",()
 test("export refuses more than 10000 items instead of creating an unrestorable file",()=>{
  const many=Array.from({length:10001},(_,i)=>({...item,id:String(i),source_url:"https://example.com/"+i}));
  assert.throws(()=>createLibraryBackup(many),/10000/);
+});
+
+test("large backup splits into complete, independently importable parts without losing records",()=>{
+ const rows=Array.from({length:10003},(_,i)=>({...item,source_url:"https://example.com/recipe/"+i,title:"Recipe "+i}));
+ const parts=createLibraryBackupParts(rows);
+ assert.equal(parts.length,2);
+ assert.equal(parts.reduce((sum,part)=>sum+part.item_count,0),10003);
+ assert.equal(parts[0].item_count,10000);
+ assert.equal(parts[1].item_count,3);
+ for(const part of parts)assert.equal(parseLibraryBackup(JSON.stringify(part)).item_count,part.item_count);
+ assert.equal(parts[1].items[2].source_url,rows[10002].source_url);
+});
+test("empty backup remains a valid single JSON part",()=>{
+ const parts=createLibraryBackupParts([]);
+ assert.equal(parts.length,1);
+ assert.equal(parts[0].item_count,0);
 });
