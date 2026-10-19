@@ -168,6 +168,13 @@ export default function CollectionPage() {
   useEffect(() => { void reload(); }, []);
 
   useEffect(() => {
+    if(!restoreBusy)return;
+    const warn=(event:BeforeUnloadEvent)=>{event.preventDefault();event.returnValue="";};
+    window.addEventListener("beforeunload",warn);
+    return ()=>window.removeEventListener("beforeunload",warn);
+  },[restoreBusy]);
+
+  useEffect(() => {
     const onScroll = () => setShowTop(window.scrollY > 420);
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
@@ -411,6 +418,7 @@ export default function CollectionPage() {
   }
 
   function importKey() {
+    if(restoreBusy||inspectBusy||backupBusy){setMessage("A gyűjteménykulcs nem cserélhető mentés vagy visszaállítás közben.");return;}
     const next = prompt("Illeszd be a másik eszköz MOTA Import gyűjteménykulcsát:");
     if (!next) return;
     try {
@@ -851,7 +859,7 @@ export default function CollectionPage() {
         </div>
         <div className={styles.deviceButtons}>
           <button type="button" onClick={() => void copyKey()}>▤ &nbsp; Kulcs másolása</button>
-          <button type="button" onClick={importKey}>⌗ &nbsp; Kulcs beillesztése</button>
+          <button type="button" disabled={restoreBusy||inspectBusy||backupBusy} onClick={importKey}>⌗ &nbsp; Kulcs beillesztése</button>
         </div>
       </section>
 
