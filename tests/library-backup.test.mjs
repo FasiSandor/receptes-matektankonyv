@@ -57,3 +57,17 @@ test("backup rejects oversized source links and recipe titles",()=>{
  another.items[0].result.title="x".repeat(5001);
  assert.throws(()=>parseLibraryBackup(JSON.stringify(another)));
 });
+
+test("backup rejects malformed ingredient objects and non-text recipe steps",()=>{
+ const a=createLibraryBackup([item]);
+ a.items[0].result.ingredients=[{amount:"1 kg"}];
+ assert.throws(()=>parseLibraryBackup(JSON.stringify(a)));
+ const b=createLibraryBackup([item]);
+ b.items[0].result.method_steps=[{html:"unexpected"}];
+ assert.throws(()=>parseLibraryBackup(JSON.stringify(b)));
+});
+test("backup rejects oversized metadata tags",()=>{
+ const a=createLibraryBackup([item]);
+ a.items[0].tags=["x".repeat(1001)];
+ assert.throws(()=>parseLibraryBackup(JSON.stringify(a)));
+});
