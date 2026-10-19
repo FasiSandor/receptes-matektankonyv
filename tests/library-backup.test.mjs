@@ -31,3 +31,14 @@ test("backup rejects corrupt JSON and mismatched counts",()=>{
  backup.item_count=2;
  assert.throws(()=>parseLibraryBackup(JSON.stringify(backup)));
 });
+
+test("backup rejects invalid preference fields before restore",()=>{
+ const backup=createLibraryBackup([item]);
+ backup.items[0].favorite="yes";
+ assert.throws(()=>parseLibraryBackup(JSON.stringify(backup)));
+});
+test("backup rejects malformed ingredient and tag structures",()=>{
+ const backup=createLibraryBackup([item]);
+ backup.items[0].result.ingredients="not-an-array";
+ assert.throws(()=>parseLibraryBackup(JSON.stringify(backup)));
+});
