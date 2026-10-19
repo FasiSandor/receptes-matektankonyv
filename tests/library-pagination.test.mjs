@@ -1,3 +1,4 @@
+import {webcrypto} from "node:crypto";
 import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
@@ -10,7 +11,7 @@ const code=ts.transpileModule(source,{compilerOptions:{target:ts.ScriptTarget.ES
 test("library pagination retrieves all records across three pages without truncation",async()=>{
  const calls=[];
  const rows=Array.from({length:1103},(_,i)=>({id:String(i),title:"Item "+i}));
- const sandbox={exports:{},URL,Date,JSON,TextEncoder,Uint8Array,crypto:{getRandomValues(a){a.fill(7);return a;}},localStorage:{getItem(){return "test-library-key-1234567890";}},fetch:async(url)=>{
+ const sandbox={exports:{},URL,Date,JSON,TextEncoder,Uint8Array,crypto:webcrypto,localStorage:{getItem(){return "test-library-key-1234567890";}},fetch:async(url)=>{
   const u=new URL(url);
   const offset=Number(u.searchParams.get("offset")||0);
   const limit=Number(u.searchParams.get("limit")||500);
