@@ -271,7 +271,7 @@ export async function saveLibraryResult(result: MotaResult): Promise<LibraryItem
 }
 
 /** Restore only new records. The database unique key prevents replacing an existing item. */
-export async function restoreLibraryItemIfMissing(result:MotaResult):Promise<LibraryItem|null> {
+export async function restoreLibraryItemIfMissing(result:MotaResult, metadata?:Pick<LibraryItem,"favorite"|"for_competition"|"status"|"note"|"tags">):Promise<LibraryItem|null> {
   const keyHash=await hashLibraryKey(getLibraryKey());
   const rows=await api("mota_import_items?on_conflict=library_key_hash,source_url",{
     method:"POST",
@@ -301,6 +301,7 @@ export async function restoreLibraryItemIfMissing(result:MotaResult):Promise<Lib
       competition_ideas:result.competition_ideas||[],
       tags:result.tags||[],
       raw_result:result,
+      ...(metadata?{favorite:metadata.favorite,for_competition:metadata.for_competition,status:metadata.status,note:metadata.note,tags:metadata.tags}:{}),
       updated_at:new Date().toISOString()
     })
   }) as LibraryItem[]|null;
