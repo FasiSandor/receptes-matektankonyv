@@ -411,6 +411,31 @@ export default function CollectionPage() {
     }
   }
 
+  function downloadRemainingBackup() {
+    if(restoreBusy||restoreFailedEntries.length===0)return;
+    try{
+      const remainder:LibraryBackup={
+        format:"tudaskonyvtar-library-v1",
+        exported_at:new Date().toISOString(),
+        item_count:restoreFailedEntries.length,
+        items:restoreFailedEntries
+      };
+      const json=JSON.stringify(remainder,null,2);
+      parseLibraryBackup(json);
+      const blob=new Blob([json],{type:"application/json"});
+      if(blob.size>50_000_000)throw Error("A hátralévő mentés túl nagy.");
+      const href=URL.createObjectURL(blob);
+      const link=document.createElement("a");
+      link.href=href;
+      link.download="tudaskonyvtar-hatralevo-"+new Date().toISOString().slice(0,10)+".json";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(()=>URL.revokeObjectURL(href),1000);
+      setMessage(remainder.item_count+" feldolgozatlan vagy hibás recept külön mentése elkészült.");
+    }catch(error){setMessage(error instanceof Error?error.message:"A hátralévő elemek mentése nem sikerült.");}
+  }
+
   async function copyKey() {
     const key = getLibraryKey();
     await navigator.clipboard.writeText(key);
@@ -834,6 +859,7 @@ export default function CollectionPage() {
         </div>
       ) : null}
 
+      {restoreFailedEntries.length>0&&!restoreBusy&&<button type="button" onClick={downloadRemainingBackup}>Hátralévő {restoreFailedEntries.length} recept letöltése JSON-ként</button>}
       {restoreFailedEntries.length>0&&!restoreBusy&&<button type="button" onClick={()=>{setRestorePreview(previous=>previous?{...previous,items:restoreFailedEntries,item_count:restoreFailedEntries.length}:null);setRestoreExisting(0);setRestoreFailedEntries([]);setRestoreErrors([]);setRestoreSummary(null);setMessage("A sikertelen elemek újrapróbálásra előkészítve. Jóváhagyás után indul a visszaállítás.");}}>A {restoreFailedEntries.length} sikertelen vagy feldolgozatlan elem folytatása</button>}
 
       {restoreSummary&&<section aria-label="Visszaállítás eredménye"><p role="status">Visszaállítás eredménye: {restoreSummary.added} új, {restoreSummary.skipped} kihagyott, {restoreSummary.failed} hibás, {restoreSummary.pending} feldolgozatlan elem.</p>{restoreErrors.length>0&&<details><summary>Hibás elemek részletei ({restoreErrors.length})</summary><ul>{restoreErrors.map((error,index)=><li key={index}>{error}</li>)}</ul></details>}</section>}
