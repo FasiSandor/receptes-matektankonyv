@@ -1,3 +1,17 @@
+# JELENLEGI ÁLLAPOT – 2026-10-19 (ez az irányadó)
+
+**GitHub PR #8, fejlesztési ág. Production merge/deploy NEM történt.** Az alábbi régebbi naplóbejegyzések történeti pillanatképek; a korábbi „nincs HTML import”, „500-as exportlimit”, „nem futott build”, „nincs adatbázispróba” kijelentések **már nem aktuálisak**.
+
+**Automatizált ellenőrzés:** a `da27ece5a789ac9170e41a90c5e0457850e0dab9` commit két workflow-ja, **Build verification** és **Tudaskonyvtar verification**, egyaránt SUCCESS. A későbbi commitok esetén újra ellenőrizni kell.
+
+**Megvalósult:** automatikus HTML Recipe/cikk import és szerkeszthető előnézet; egyedi és legfeljebb 15 linkes tömeges import; menthető/visszatölthető munkamenet; duplikátumot megőrző beszúrás; lapozott gyűjteménylista; JSON biztonsági mentés és részleges, újrapróbálható visszaállítás. A mentés továbbra sem tartalmazza a videófájlok bájtjait.
+
+**Élő MOTA Supabase-ellenőrzés, írások tranzakciós ROLLBACK-kel:** `public.mota_import_items` RLS bekapcsolva; létezik a `(library_key_hash,source_url)` egyedi index. `anon` szereppel, kulcs nélkül 0 látható rekord; idegen hash hozzáférése hamis. Tesztkulcs A-val ideiglenesen beszúrt sor tesztkulcs B-vel nem látható (0 sor). Azonos URL újrabeszúrása `ON CONFLICT DO NOTHING` mellett 1 rekordot hagyott, eredeti címmel. Minden próba visszagörgetve; éles recept nem módosult. **Korlát:** ezek SQL/RLS tesztek, nem teljes böngésző–PostgREST–UI E2E.
+
+**Kiadás előtt hátra:** valós böngészős URL-import és teljes mentés/export/visszaállítás teszt, REST kliens és családi kulcsok ellenőrzése, külső URL feldolgozó SSRF/rate-limit felülvizsgálata, videófájl-mentés korlátainak egyértelmű jelzése. A PDF-import külön későbbi funkció; nem része ennek a HTML-import mérföldkőnek. A felhasználó elfogadott dizájnja, útvonalai és adatai megőrzendők.
+
+---
+
 # Tudáskönyvtár – integrációs fejlesztési állapot (2026-10-19)
 
 Fejlesztési ág: `work/tudaskonyvtar-integracio-20261019`. Élesítésre NEM kész.
