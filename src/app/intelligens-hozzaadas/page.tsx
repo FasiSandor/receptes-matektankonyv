@@ -83,7 +83,7 @@ export default function IntelligentAdd() {
   async function analyzeBatch(retryOnly=false){
     if(batchOperation.current)return;
     batchOperation.current=true;
-    const urls=retryOnly?batchResults.filter(x=>!!x.error&&x.errorPhase==="analyze"&&!x.saved).map(x=>x.url):[...new Set(batchUrls.split(/\r?\n/).map(x=>x.trim()).filter(Boolean))];
+    const urls=retryOnly?batchResults.filter(x=>!!x.error&&x.errorPhase==="analyze"&&!x.saved).map(x=>x.url):[...new Set(batchUrls.split(/\r?\n/).map(x=>{try{const u=new URL(x.trim());return ["http:","https:"].includes(u.protocol)&&!u.username&&!u.password?u.toString():x.trim();}catch{return x.trim();}}).filter(Boolean))];
     if(urls.length===0||urls.length>15){batchOperation.current=false;setBatchMessage("Adj meg 1–15 különálló forráslinket.");return;}
     setDraftDirty(true);setBatchBusy(true);setBatchMode("analyze");batchAbort.current=false;setBatchSkipCount(0);if(!retryOnly)setBatchResults([]);setBatchProgress(0);setBatchMessage("");
     const results:BatchEntry[]=[];
@@ -91,7 +91,7 @@ export default function IntelligentAdd() {
     if(!retryOnly&&batchOnlyNew){
       try{
         const existing=await listLibraryItems();
-        existingUrls=new Set(existing.map(x=>x.source_url));
+        existingUrls=new Set(existing.map(x=>{try{return new URL(x.source_url).toString();}catch{return x.source_url;}}));
       }catch(e){
         setBatchBusy(false);setBatchMode(null);batchOperation.current=false;
         setBatchMessage("A meglévő gyűjtemény ellenőrzése nem sikerült. A biztonságos szűréshez próbáld újra: "+(e instanceof Error?e.message:"hiba"));
