@@ -39,3 +39,6 @@ jobs:
 
       - name: Library pagination behavior tests
         run: node --test tests/library-pagination.test.mjs
+
+      - name: Library restore integration tests (isolated mock, no deploy)
+        run: node --test tests/library-restore-integration.test.mjs
