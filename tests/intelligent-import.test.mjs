@@ -156,7 +156,7 @@ test("bulk import does not replace existing library recipes",()=>{
 
 test("bulk import preflight prevents redundant extraction of existing recipes",()=>{
  assert.match(ui,/const \[batchOnlyNew,setBatchOnlyNew\]/);
- assert.match(ui,/const existing=await listLibraryItems\(\)/);
+ assert.match(ui,/const existing=await listLibrarySourceUrls\(\)/);
  assert.match(ui,/if\(existingUrls\.has\(url\)\)/);
  assert.match(ui,/Már meglévő linkek kihagyása/);
  assert.match(ui,/A meglévő gyűjtemény ellenőrzése nem sikerült/);
