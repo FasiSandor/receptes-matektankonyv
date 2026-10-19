@@ -189,3 +189,5 @@ test("IPv4 allowlist rejects private, reserved and documentation ranges",async()
   assert.equal(check(ip),true,"must permit "+ip);
  }
 });
+
+test("library rejects missing keys before hashing or sending REST requests",()=>{assert.match(library,/export async function hashLibraryKey\(key = getLibraryKey\(\)\) \{\s*if \(key\.trim\(\)\.length < 20\)/);assert.match(library,/async function api\(path: string, init: RequestInit = \{\}\) \{\s*const key = getLibraryKey\(\);\s*if \(key\.trim\(\)\.length < 20\)/);});
