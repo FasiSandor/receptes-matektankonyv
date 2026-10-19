@@ -35,3 +35,5 @@ test('common Hungarian quantities are stored separately and original text retain
 test('ingredient unit list supports cooking measures and abbreviations',()=>{ for(const unit of ['ek','tk','gerezd','fej','szál','szelet','csipet','bögre']) assert.ok(ui.includes('|'+unit),'missing '+unit); });
 
 test('unparsed ingredients also retain their exact original wording',()=>{ assert.match(ui,/\{name:original,note:original\}/); });
+
+test('common fraction characters are recognized as ingredient quantities',()=>{ assert.ok(ui.includes('½¼¾')); });
