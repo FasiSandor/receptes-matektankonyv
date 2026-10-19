@@ -9,6 +9,7 @@ export type LibraryBackup = {
 };
 
 export function createLibraryBackup(items:LibraryItem[]):LibraryBackup {
+  if(items.length>10000)throw Error("A mentés legfeljebb 10000 elemet tartalmazhat. A teljes gyűjtemény nem exportálható ebben a formátumban.");
   return {
     format:BACKUP_FORMAT,
     exported_at:new Date().toISOString(),
