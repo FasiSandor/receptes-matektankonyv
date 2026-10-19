@@ -63,6 +63,9 @@ export function parseLibraryBackup(raw:string):LibraryBackup {
     if(typeof item.note!=="string"||item.note.length>100000)throw Error("Hibás megjegyzés.");
     if(!Array.isArray(item.tags)||item.tags.some(tag=>typeof tag!=="string"))throw Error("Hibás címkék.");
     if(typeof item.result.platform!=="string")throw Error("Hiányzó forrástípus.");
+    if(item.tags.length>1000||item.tags.some(tag=>tag.length>1000))throw Error("Túl sok vagy túl hosszú címke.");
+    if(item.result.ingredients&&item.result.ingredients.some(ingredient=>!ingredient||typeof ingredient!=="object"||typeof ingredient.name!=="string"))throw Error("Hibás hozzávaló a mentésben.");
+    if(item.result.method_steps&&item.result.method_steps.some(step=>typeof step!=="string"))throw Error("Hibás elkészítési lépés.");
     for(const field of ["ingredients","method_steps","tags","content_tags","ingredient_tags"] as const){
       const value=item.result[field];
       if(value!==undefined&&!Array.isArray(value))throw Error("Hibás receptmező: "+field);
