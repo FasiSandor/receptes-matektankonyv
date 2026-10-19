@@ -42,3 +42,8 @@ test("backup rejects malformed ingredient and tag structures",()=>{
  backup.items[0].result.ingredients="not-an-array";
  assert.throws(()=>parseLibraryBackup(JSON.stringify(backup)));
 });
+
+test("backup rejects duplicate source URLs to avoid overwriting entries",()=>{
+ const backup=createLibraryBackup([item,item]);
+ assert.throws(()=>parseLibraryBackup(JSON.stringify(backup)));
+});
