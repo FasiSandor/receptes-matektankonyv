@@ -45,6 +45,13 @@ export default function IntelligentAdd() {
     window.addEventListener("beforeunload",warn);
     return ()=>window.removeEventListener("beforeunload",warn);
   },[batchBusy]);
+  const [draftDirty,setDraftDirty]=useState(false);
+  useEffect(()=>{
+    if(!draftDirty||batchBusy)return;
+    const warn=(event:BeforeUnloadEvent)=>{event.preventDefault();event.returnValue="";};
+    window.addEventListener("beforeunload",warn);
+    return ()=>window.removeEventListener("beforeunload",warn);
+  },[draftDirty,batchBusy]);
   const draftFile=useRef<HTMLInputElement>(null);
   function exportDraft(){
     if(batchBusy||!batchResults.length)return;
@@ -55,7 +62,7 @@ export default function IntelligentAdd() {
       a.href=objectUrl;a.download="tudaskonyvtar-import-munkamenet-"+new Date().toISOString().slice(0,10)+".json";
       document.body.appendChild(a);a.click();a.remove();
       setTimeout(()=>URL.revokeObjectURL(objectUrl),1000);
-      setBatchMessage("Munkamenet letöltve. A fájl tartalmazza a még nem mentett szerkesztéseket is.");
+      setDraftDirty(false);setBatchMessage("Munkamenet letöltve. A fájl tartalmazza a még nem mentett szerkesztéseket is.");
     }catch(e){setBatchMessage(e instanceof Error?e.message:"Nem sikerült a munkamenet exportálása.");}
   }
   async function importDraft(file:File|undefined){
@@ -64,7 +71,7 @@ export default function IntelligentAdd() {
     try{
       const parsed=parseBatchDraft(await file.text());
       if(batchResults.length&&!window.confirm("A jelenlegi többes importálási munkamenetet lecseréljük a fájl tartalmára. Folytatod?"))return;
-      setBatchResults(parsed);setBatchUrls(parsed.map(x=>x.url).join("\n"));setBatchProgress(0);
+      setBatchResults(parsed);setDraftDirty(false);setBatchUrls(parsed.map(x=>x.url).join("\n"));setBatchProgress(0);
       setBatchMessage(parsed.length+" tétel visszatöltve. A korábban mentett jelölések tájékoztató jellegűek, nem adatbázis-ellenőrzés eredményei.");
     }catch(e){setBatchMessage(e instanceof Error?e.message:"Nem sikerült a munkamenet beolvasása.");}
     finally{if(draftFile.current)draftFile.current.value="";}
@@ -74,7 +81,7 @@ export default function IntelligentAdd() {
     if(batchBusy)return;
     const urls=retryOnly?batchResults.filter(x=>!!x.error&&x.errorPhase==="analyze"&&!x.saved).map(x=>x.url):[...new Set(batchUrls.split(/\r?\n/).map(x=>x.trim()).filter(Boolean))];
     if(urls.length===0||urls.length>15){setBatchMessage("Adj meg 1–15 különálló forráslinket.");return;}
-    setBatchBusy(true);setBatchMode("analyze");batchAbort.current=false;if(!retryOnly)setBatchResults([]);setBatchProgress(0);setBatchMessage("");
+    setDraftDirty(true);setBatchBusy(true);setBatchMode("analyze");batchAbort.current=false;if(!retryOnly)setBatchResults([]);setBatchProgress(0);setBatchMessage("");
     const results:BatchEntry[]=[];
     try{
       for(const url of urls){
@@ -94,7 +101,7 @@ export default function IntelligentAdd() {
     const chosen=batchResults.filter(x=>x.selected&&!x.error&&!x.saved&&x.title.trim());
     if(!chosen.length){setBatchMessage("Nincs mentésre kijelölt, érvényes elem.");return;}
     if(!window.confirm(chosen.length+" kijelölt forrást mentünk a gyűjteménybe. Folytatod?"))return;
-    setBatchBusy(true);setBatchMode("save");batchAbort.current=false;setBatchProgress(0);
+    setDraftDirty(true);setBatchBusy(true);setBatchMode("save");batchAbort.current=false;setBatchProgress(0);
     let savedCount=0;let failedCount=0;
     try{
       for(const entry of chosen){
@@ -181,7 +188,7 @@ export default function IntelligentAdd() {
       <h2>Több webcím feldolgozása</h2>
       <p className="kh-muted">Legfeljebb 15 recept- vagy cikklink soronként. Az eredményeket mentés előtt külön-külön ellenőrizheted, szerkesztheted és kijelölheted. Az eredeti egyedi hozzáadás változatlanul működik.</p>
       <label htmlFor="batchUrls">Forráslinkek, soronként egy</label>
-      <textarea id="batchUrls" style={field} rows={6} value={batchUrls} disabled={batchBusy} onChange={e=>setBatchUrls(e.target.value)} placeholder={"https://pelda.hu/recept-1\\nhttps://pelda.hu/recept-2"}/>
+      <textarea id="batchUrls" style={field} rows={6} value={batchUrls} disabled={batchBusy} onChange={e=>{setBatchUrls(e.target.value);setDraftDirty(true);}} placeholder={"https://pelda.hu/recept-1\\nhttps://pelda.hu/recept-2"}/>
       <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
         <button className="kh-btn secondary" disabled={batchBusy} onClick={()=>analyzeBatch()}>Linkek feldolgozása</button>
         <button className="kh-btn secondary" disabled={batchBusy||!batchResults.length} onClick={exportDraft}>Munkamenet mentése JSON-ként</button>
@@ -195,7 +202,7 @@ export default function IntelligentAdd() {
       {batchBusy&&<p role="status">{batchMode==="save"?"Mentési műveletek":"Feldolgozott linkek"}: {batchProgress}</p>}
       {batchMessage&&<p role="status" className="kh-muted">{batchMessage}</p>}
       {batchResults.map((entry,index)=><div key={entry.url} style={{border:"1px solid #334155",borderRadius:10,padding:12,display:"grid",gap:8}}>
-        <label><input type="checkbox" checked={entry.selected} disabled={batchBusy||!!entry.error||entry.saved} onChange={e=>setBatchResults(old=>old.map((x,i)=>i===index?{...x,selected:e.target.checked}:x))}/> {entry.saved?"Mentve":entry.error?"Sikertelen":entry.kind==="recipe"?"Recept":"Cikk"} – {index+1}.</label>
+        <label><input type="checkbox" checked={entry.selected} disabled={batchBusy||!!entry.error||entry.saved} onChange={e=>{setDraftDirty(true);setBatchResults(old=>old.map((x,i)=>i===index?{...x,selected:e.target.checked}:x));}}/> {entry.saved?"Mentve":entry.error?"Sikertelen":entry.kind==="recipe"?"Recept":"Cikk"} – {index+1}.</label>
         <small style={{overflowWrap:"anywhere"}}>{entry.url}</small>
         {entry.error?<p role="alert">{entry.error}</p>:<>
           <label>Cím<input style={field} value={entry.title} disabled={batchBusy} onChange={e=>setBatchResults(old=>old.map((x,i)=>i===index?{...x,title:e.target.value}:x))}/></label>
