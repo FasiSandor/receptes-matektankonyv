@@ -1081,3 +1081,8 @@
   .catalogTools{grid-template-columns:1fr}
   .sourceGrid,.facetGrid{grid-template-columns:1fr}
 }
+
+@media(max-width:680px){.hero h1{font-size:42px}.groupRail{position:static;transform:none;flex-direction:row;flex-wrap:wrap}.groupRail button{width:36px;height:34px}.floatingStack{bottom:100px}}
+
+@media(max-width:680px){.shell{overflow-x:clip;padding-bottom:110px}.hero h1{font-size:clamp(34px,10vw,48px);overflow-wrap:anywhere}.brandText small{white-space:normal}.topbar{flex-wrap:wrap}.groupRail{width:100%;margin:12px 0;padding:8px;gap:5px;max-height:none;border-radius:12px}.groupRail button{min-width:36px;padding:0 5px;background:#20263a;border-radius:7px}.catalogTools{grid-template-columns:repeat(2,minmax(0,1fr))}.catalogTool,.catalogToolActive{grid-template-columns:30px minmax(0,1fr)}.catalogTool i,.catalogToolActive i{display:none}.cardMain{grid-template-columns:108px minmax(0,1fr) 24px}.thumb,.thumbPlaceholder,.videoPreview{width:108px;height:106px}.quickActions{padding-left:11px}}
+@media(max-width:390px){.catalogTools{grid-template-columns:1fr}.cardMain{grid-template-columns:88px minmax(0,1fr) 22px}.thumb,.thumbPlaceholder,.videoPreview{width:88px;height:90px}}
