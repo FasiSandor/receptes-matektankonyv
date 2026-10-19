@@ -10,6 +10,8 @@ function displayDuration(value:string):string {
  return units.length?units.join(" "):value;
 }
 
+type BatchEntry={url:string;title:string;description:string;ingredients:string[];steps:string[];kind:string;error?:string;selected:boolean;author:string;recipeYield:string;prepTime:string;cookTime:string;image:string;category:string;cuisine:string;calories:string;keywords:string[];saved:boolean};
+const emptyBatch=(url:string):BatchEntry=>({url,title:"",description:"",ingredients:[],steps:[],kind:"article",selected:false,author:"",recipeYield:"",prepTime:"",cookTime:"",image:"",category:"",cuisine:"",calories:"",keywords:[],saved:false});
 export default function IntelligentAdd() {
   const [url,setUrl]=useState("");
   const [title,setTitle]=useState("");
@@ -30,7 +32,7 @@ export default function IntelligentAdd() {
   const [busy,setBusy]=useState(false);
   const [saved,setSaved]=useState(false);
   const [batchUrls,setBatchUrls]=useState("");
-  const [batchResults,setBatchResults]=useState<Array<{url:string;title:string;description:string;ingredients:string[];steps:string[];kind:string;error?:string;selected:boolean}>>([]);
+  const [batchResults,setBatchResults]=useState<Array<BatchEntry>>([]);
   const [batchBusy,setBatchBusy]=useState(false);
   const [batchProgress,setBatchProgress]=useState(0);
   const [batchMessage,setBatchMessage]=useState("");
@@ -40,7 +42,7 @@ export default function IntelligentAdd() {
     const urls=[...new Set(batchUrls.split(/\\r?\\n/).map(x=>x.trim()).filter(Boolean))];
     if(urls.length===0||urls.length>15){setBatchMessage("Adj meg 1–15 különálló forráslinket.");return;}
     setBatchBusy(true);batchAbort.current=false;setBatchResults([]);setBatchProgress(0);setBatchMessage("");
-    const results:Array<{url:string;title:string;description:string;ingredients:string[];steps:string[];kind:string;error?:string;selected:boolean}>=[];
+    const results:BatchEntry[]=[];
     try{
       for(const url of urls){
         if(batchAbort.current)break;
@@ -48,8 +50,8 @@ export default function IntelligentAdd() {
           const response=await fetch("/api/intelligens-hozzaadas",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({url})});
           const data=await response.json();
           if(!response.ok)throw Error(data.error||"A feldolgozás sikertelen.");
-          results.push({url,title:String(data.title||""),description:String(data.description||""),ingredients:Array.isArray(data.ingredients)?data.ingredients:[],steps:Array.isArray(data.steps)&&data.steps.length?data.steps:Array.isArray(data.paragraphs)?data.paragraphs:[],kind:data.kind==="recipe"?"recipe":"article",selected:true});
-        }catch(e){results.push({url,title:"",description:"",ingredients:[],steps:[],kind:"article",error:e instanceof Error?e.message:"Hiba",selected:false});}
+          results.push({...emptyBatch(url),title:String(data.title||""),description:String(data.description||""),ingredients:Array.isArray(data.ingredients)?data.ingredients:[],steps:Array.isArray(data.steps)&&data.steps.length?data.steps:Array.isArray(data.paragraphs)?data.paragraphs:[],kind:data.kind==="recipe"?"recipe":"article",selected:true,author:String(data.author||""),recipeYield:String(data.recipeYield||""),prepTime:displayDuration(String(data.prepTime||"")),cookTime:displayDuration(String(data.cookTime||"")),image:String(data.image||""),category:String(data.category||""),cuisine:String(data.cuisine||""),calories:String(data.calories||""),keywords:Array.isArray(data.keywords)?data.keywords:[]});
+        }catch(e){results.push({...emptyBatch(url),error:e instanceof Error?e.message:"Hiba"});}
         setBatchResults([...results]);setBatchProgress(results.length);
       }
     }finally{setBatchBusy(false);setBatchMessage(batchAbort.current?"A feldolgozás megszakítva. Az elkészült előnézetek megmaradtak.":"Feldolgozás kész. Ellenőrizd a találatokat mentés előtt.");}
@@ -65,10 +67,10 @@ export default function IntelligentAdd() {
       for(const entry of chosen){
         if(batchAbort.current)break;
         try{
-          const result:MotaResult={source_url:entry.url,title:entry.title.trim(),platform:"weboldal",hungarian_summary:entry.description,recipe_group:entry.kind==="recipe"?"Webes receptek":"Szakmai cikkek",ingredients:entry.ingredients.map(x=>({name:x,note:x})),method_steps:entry.steps,content_tags:["weboldal"]};
+          const result:MotaResult={source_url:entry.url,title:entry.title.trim(),platform:"weboldal",hungarian_summary:[entry.description,entry.author?"Szerző: "+entry.author:"",entry.recipeYield?"Adag: "+entry.recipeYield:"",entry.prepTime?"Előkészítési idő: "+entry.prepTime:"",entry.cookTime?"Sütési/főzési idő: "+entry.cookTime:"",entry.calories?"Kalória (forrás szerint): "+entry.calories:""].filter(Boolean).join("\n"),thumbnail_url:entry.image,recipe_group:entry.category|| (entry.kind==="recipe"?"Webes receptek":"Szakmai cikkek"),ingredient_tags:entry.keywords.slice(0,20),ingredients:entry.ingredients.map(x=>({name:x,note:x})),method_steps:entry.steps,content_tags:["weboldal",...(entry.cuisine?[entry.cuisine]:[])]};
           await saveLibraryResult(result);
           savedCount++;
-          setBatchResults(old=>old.map(x=>x.url===entry.url?{...x,selected:false}:x));
+          setBatchResults(old=>old.map(x=>x.url===entry.url?{...x,selected:false,saved:true}:x));
         }catch{failedCount++;}
         setBatchProgress(savedCount+failedCount);
       }
@@ -155,12 +157,12 @@ export default function IntelligentAdd() {
       {batchBusy&&<p role="status">Feldolgozott elemek: {batchProgress}</p>}
       {batchMessage&&<p role="status" className="kh-muted">{batchMessage}</p>}
       {batchResults.map((entry,index)=><div key={entry.url} style={{border:"1px solid #334155",borderRadius:10,padding:12,display:"grid",gap:8}}>
-        <label><input type="checkbox" checked={entry.selected} disabled={batchBusy||!!entry.error} onChange={e=>setBatchResults(old=>old.map((x,i)=>i===index?{...x,selected:e.target.checked}:x))}/> {entry.error?"Sikertelen":entry.kind==="recipe"?"Recept":"Cikk"} – {index+1}.</label>
+        <label><input type="checkbox" checked={entry.selected} disabled={batchBusy||!!entry.error||entry.saved} onChange={e=>setBatchResults(old=>old.map((x,i)=>i===index?{...x,selected:e.target.checked}:x))}/> {entry.saved?"Mentve":entry.error?"Sikertelen":entry.kind==="recipe"?"Recept":"Cikk"} – {index+1}.</label>
         <small style={{overflowWrap:"anywhere"}}>{entry.url}</small>
         {entry.error?<p role="alert">{entry.error}</p>:<>
           <label>Cím<input style={field} value={entry.title} disabled={batchBusy} onChange={e=>setBatchResults(old=>old.map((x,i)=>i===index?{...x,title:e.target.value}:x))}/></label>
           <label>Összefoglaló<textarea style={field} rows={2} value={entry.description} disabled={batchBusy} onChange={e=>setBatchResults(old=>old.map((x,i)=>i===index?{...x,description:e.target.value}:x))}/></label>
-          <details><summary>Hozzávalók és tartalom szerkesztése</summary>
+          <details><summary>Receptadatok, hozzávalók és tartalom szerkesztése</summary><label>Szerző<input style={field} value={entry.author} disabled={batchBusy} onChange={e=>setBatchResults(old=>old.map((x,i)=>i===index?{...x,author:e.target.value}:x))}/></label><label>Adagszám<input style={field} value={entry.recipeYield} disabled={batchBusy} onChange={e=>setBatchResults(old=>old.map((x,i)=>i===index?{...x,recipeYield:e.target.value}:x))}/></label><label>Kategória<input style={field} value={entry.category} disabled={batchBusy} onChange={e=>setBatchResults(old=>old.map((x,i)=>i===index?{...x,category:e.target.value}:x))}/></label><label>Konyha<input style={field} value={entry.cuisine} disabled={batchBusy} onChange={e=>setBatchResults(old=>old.map((x,i)=>i===index?{...x,cuisine:e.target.value}:x))}/></label><label>Kép URL<input style={field} value={entry.image} disabled={batchBusy} onChange={e=>setBatchResults(old=>old.map((x,i)=>i===index?{...x,image:e.target.value}:x))}/></label>
             <label>Hozzávalók<textarea style={field} rows={4} value={entry.ingredients.join("\\n")} disabled={batchBusy} onChange={e=>setBatchResults(old=>old.map((x,i)=>i===index?{...x,ingredients:e.target.value.split("\\n").filter(Boolean)}:x))}/></label>
             <label>Elkészítés / cikk<textarea style={field} rows={5} value={entry.steps.join("\\n")} disabled={batchBusy} onChange={e=>setBatchResults(old=>old.map((x,i)=>i===index?{...x,steps:e.target.value.split("\\n").filter(Boolean)}:x))}/></label>
           </details>
