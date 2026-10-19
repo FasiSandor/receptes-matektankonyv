@@ -177,3 +177,19 @@ test("metadata update rejects a database response for the wrong recipe",async()=
  await assert.rejects(lib.updateLibraryItem("123e4567-e89b-42d3-a456-426614174000",{favorite:true}),/nem igazolható/);
  assert.deepEqual(requests,["PATCH"]);
 });
+
+test("video upload refuses zero-byte content before any request",async()=>{
+ const requests=[];
+ const sandbox={exports:{},URL,Date,JSON,TextEncoder,Uint8Array,crypto:webcrypto,window:{},localStorage:{getItem(){return key;}},fetch:async(...args)=>{requests.push(args);throw Error("Network must not be used");},Blob};
+ const lib=load("../src/app/mota-import/library.ts",sandbox);
+ await assert.rejects(lib.uploadLibraryVideo("123e4567-e89b-42d3-a456-426614174000",new Blob([])),/Üres videófájl/);
+ assert.equal(requests.length,0);
+});
+
+test("video upload refuses invalid recipe IDs before any request",async()=>{
+ const requests=[];
+ const sandbox={exports:{},URL,Date,JSON,TextEncoder,Uint8Array,crypto:webcrypto,window:{},localStorage:{getItem(){return key;}},fetch:async(...args)=>{requests.push(args);throw Error("Network must not be used");},Blob};
+ const lib=load("../src/app/mota-import/library.ts",sandbox);
+ await assert.rejects(lib.uploadLibraryVideo("../other-recipe",new Blob(["video"])),/Érvénytelen receptazonosító/);
+ assert.equal(requests.length,0);
+});
