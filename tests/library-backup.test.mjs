@@ -80,3 +80,17 @@ test("backup requires a valid export timestamp",()=>{
  delete b.exported_at;
  assert.throws(()=>parseLibraryBackup(JSON.stringify(b)));
 });
+
+test("backup rejects malformed extended recipe fields and ingredient details",()=>{
+ for(const field of ["techniques","plating","equipment","chef_tips","competition_ideas","content_tags","ingredient_tags","tags"]){
+  const backup=createLibraryBackup([item]);
+  backup.items[0].result[field]=[null];
+  assert.throws(()=>parseLibraryBackup(JSON.stringify(backup)),field);
+ }
+ const invalid=createLibraryBackup([item]);
+ invalid.items[0].result.ingredients=[{name:"Liszt",amount:42}];
+ assert.throws(()=>parseLibraryBackup(JSON.stringify(invalid)));
+ const empty=createLibraryBackup([item]);
+ empty.items[0].result.ingredients=[{name:"   "}];
+ assert.throws(()=>parseLibraryBackup(JSON.stringify(empty)));
+});
