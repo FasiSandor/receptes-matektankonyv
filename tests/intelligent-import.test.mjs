@@ -11,3 +11,9 @@ test("no arbitrary script execution",()=>{assert.doesNotMatch(api,/\beval\s*\(/)
 test("existing collection is reused",()=>{assert.match(ui,/saveLibraryResult/);});
 test("user reviews result before save",()=>{assert.match(ui,/setTitle\(/);assert.match(ui,/setIngredients\(/);assert.match(ui,/setSteps\(/);});
 test("social imports keep their route",()=>{assert.match(home,/mota-import\?url/);});
+
+test("changing source clears stale recipe data",()=>{
+ assert.match(ui,/function changeSource/);
+ for(const field of ["Title","Summary","Ingredients","Steps"])assert.ok(ui.includes("set"+field+'("");'));
+ assert.match(ui,/onChange=\{e=>changeSource\(e.target.value\)\}/);
+});
