@@ -14,7 +14,9 @@ starter:"https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=900&q=82
 dessert:"https://images.unsplash.com/photo-1488477181946-6428a0291777?w=900&q=82"
 };
 export function Tile({href,title,subtitle,image}:{href:string;title:string;subtitle:string;image:string}){
-return <Link className="kh-tile" href={href}><img src={image} alt=""/><div className="kh-tile-body"><div className="kh-tile-title">{title}</div><div className="kh-muted" style={{marginTop:6}}>{subtitle}</div></div></Link>}
+const [imageFailed,setImageFailed]=useState(false);
+const fallback=title.toLowerCase().includes("matemat")?"∑":title.toLowerCase().includes("recept")?"♨":title.toLowerCase().includes("vide")?"▶":title.toLowerCase().includes("iskola")?"▤":"✧";
+return <Link className="kh-tile" href={href}><div className="kh-tile-media">{!imageFailed?<img src={image} alt="" loading="lazy" onError={()=>setImageFailed(true)}/>:<div className="kh-tile-fallback" aria-hidden="true">{fallback}</div>}</div><div className="kh-tile-body"><div className="kh-tile-title">{title}</div><div className="kh-muted" style={{marginTop:6}}>{subtitle}</div></div></Link>}
 export default function KnowledgeShell({children}:{children:React.ReactNode}){
 const pathname=usePathname();const [theme,setTheme]=useState("dark");
 useEffect(()=>{setTheme(localStorage.getItem("tudastar-theme")==="light"?"light":"dark")},[]);
