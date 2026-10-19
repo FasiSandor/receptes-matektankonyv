@@ -45,3 +45,18 @@ test("restore inserts missing records with ignore-duplicates rather than upsert"
  assert.match(calls[0].init.headers.Prefer,/resolution=ignore-duplicates/);
  assert.doesNotMatch(calls[0].init.headers.Prefer,/merge-duplicates/);
 });
+
+test("restore creates a new record without using merge-duplicates",async()=>{
+ const calls=[];
+ const sandbox={exports:{},URL,Date,JSON,TextEncoder,Uint8Array,crypto:webcrypto,window:{},localStorage:{getItem(){return "test-library-key-1234567890";}},fetch:async(url,init)=>{
+  calls.push({url,init});
+  return {ok:true,status:201,text:async()=>JSON.stringify([{id:"new-1",title:"New recipe"}])};
+ }};
+ vm.runInNewContext(code,sandbox);
+ const result=await sandbox.exports.restoreLibraryItemIfMissing({source_url:"https://example.com/new",title:"New recipe",platform:"web"});
+ assert.equal(result.id,"new-1");
+ assert.equal(calls.length,1);
+ assert.equal(calls[0].init.method,"POST");
+ assert.match(calls[0].init.headers.Prefer,/ignore-duplicates/);
+ assert.equal(JSON.parse(calls[0].init.body).source_url,"https://example.com/new");
+});
