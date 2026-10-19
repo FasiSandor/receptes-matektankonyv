@@ -308,6 +308,22 @@ export async function restoreLibraryItemIfMissing(result:MotaResult, metadata?:P
   return rows?.[0]||null;
 }
 
+/** Read only source URLs for duplicate preflight; avoids downloading entire recipe bodies. */
+export async function listLibrarySourceUrls(): Promise<string[]> {
+  const urls:string[]=[];
+  const PAGE_SIZE=500;
+  for(let offset=0;offset<100000;offset+=PAGE_SIZE){
+    const page=await api("mota_import_items?select=source_url&order=created_at.desc,id.desc&limit="+PAGE_SIZE+"&offset="+offset) as Array<{source_url:string}>;
+    if(!Array.isArray(page))throw Error("Hibás gyűjteményválasz.");
+    for(const row of page){
+      if(!row||typeof row.source_url!=="string")throw Error("Hibás gyűjtemény-forráslink.");
+      urls.push(row.source_url);
+    }
+    if(page.length<PAGE_SIZE)return urls;
+  }
+  throw Error("A gyűjtemény túl nagy az automatikus ellenőrzéshez.");
+}
+
 export async function listLibraryItems(): Promise<LibraryItem[]> {
   const result:LibraryItem[]=[];
   const PAGE_SIZE=500;
