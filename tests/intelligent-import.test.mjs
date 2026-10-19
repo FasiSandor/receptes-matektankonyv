@@ -93,3 +93,12 @@ test("backup file inspection exposes progress and prevents premature restore",()
  assert.match(page,/setInspectBusy\(false\)/);
  assert.match(page,/disabled=\{restoreBusy\|\|inspectBusy\} onClick=\{\(\)=>void restoreBackup\(\)\}/);
 });
+
+test("restore can stop safely and resume the unprocessed tail",()=>{
+ const page=readFileSync(new URL("../src/app/mota-import/gyujtemeny/page.tsx",import.meta.url),"utf8");
+ assert.match(page,/restoreStopRequested\.current=true/);
+ assert.match(page,/if\(restoreStopRequested\.current\)\{stopped=true;failedEntries\.push\(\.\.\.restorePreview\.items\.slice\(index\)\);break;\}/);
+ assert.match(page,/Visszaállítás megszakítása/);
+ assert.match(page,/feldolgozatlan elem folytatása/);
+ assert.match(page,/if\(!failed\.length&&!stopped\)setRestorePreview\(null\)/);
+});
