@@ -6,11 +6,12 @@ import { Agent, request as fetchPinned } from "undici";
 export const runtime = "nodejs";
 export const maxDuration = 30;
 const MAX_BYTES = 2_000_000;
+const MAX_PARAGRAPHS = 120;
 const recent = new Map<string,{count:number,until:number}>();
 function publicIPv4(ip:string) {
  if(net.isIP(ip)!==4)return false;
- const [a,b,c]=ip.split(".").map(Number);
- return !(a===0||a===10||a===127||a>=224||(a===169&&b===254)||(a===172&&b>=16&&b<=31)||(a===192&&b===168)||(a===100&&b>=64&&b<=127)||(a===192&&b===0)||(a===198&&(b===18||b===19))||(a===198&&b===51&&c===100)||(a===203&&b===0&&c===113)||(a===192&&b===0&&c===2));
+ const [a,b,c,d]=ip.split(".").map(Number);
+ return !(a===0||a===10||a===127||a>=224||(a===169&&b===254)||(a===172&&b>=16&&b<=31)||(a===192&&b===168)||(a===100&&b>=64&&b<=127)||(a===192&&b===0)||(a===198&&(b===18||b===19))||(a===198&&b===51&&c===100)||(a===203&&b===0&&c===113)||(a===192&&b===0&&c===2)||(a===192&&b===88&&c===99)||(a===198&&b===19)||(a===255&&b===255&&c===255&&d===255));
 }
 async function validate(raw:string) {
  if(raw.length>2048)throw Error("Túl hosszú URL.");
@@ -37,7 +38,7 @@ function extract(html:string,url:string){
  const metaDescription=html.match(/<meta[^>]+name="description"[^>]+content="([^"]*)"/i)?.[1]||html.match(/<meta[^>]+property="og:description"[^>]+content="([^"]*)"/i)?.[1]||"";
  const body=html.replace(/<(script|style|nav|footer|header|aside|form|iframe|noscript|svg)\b[^>]*>[\s\S]*?<\/\1>/gi," ");
  const main=body.match(/<(article|main)\b[^>]*>([\s\S]*?)<\/\1>/i)?.[2]||body;
- const paragraphs=[...main.matchAll(/<(p|h[1-6]|li)\b[^>]*>([\s\S]*?)<\/\1>/gi)].map(m=>clean(m[2])).filter(s=>s.length>=25&&!/^(cookie|privacy|hirdetés|feliratkozás|subscribe)/i.test(s)).slice(0,120);
+ const paragraphs=[...main.matchAll(/<(p|h[1-6]|li)\b[^>]*>([\s\S]*?)<\/\1>/gi)].map(m=>clean(m[2])).filter(s=>s.length>=25&&!/^(cookie|privacy|hirdetés|feliratkozás|subscribe)/i.test(s)).slice(0,MAX_PARAGRAPHS);
  return {kind:recipe?"recipe":"article",source_url:url,title:title.slice(0,300),description:str(r?.description)||clean(metaDescription),ingredients:Array.isArray(r?.recipeIngredient)?r.recipeIngredient.map(ingredient).filter(Boolean):[],steps:steps(r?.recipeInstructions),paragraphs};
 }
 async function download(raw:string){
@@ -64,12 +65,14 @@ export async function POST(req:NextRequest){
  try{
   const origin=req.headers.get("origin");if(origin&&new URL(origin).origin!==req.nextUrl.origin)return NextResponse.json({error:"Érvénytelen eredet."},{status:403});
   const now=Date.now();for(const [k,v] of recent)if(v.until<now)recent.delete(k);
-  const key="shared";const entry=recent.get(key);if(entry&&entry.count>=8&&entry.until>now)return NextResponse.json({error:"Túl sok kérés. Próbáld később."},{status:429});
+  const key=(req.headers.get("x-forwarded-for")||"").split(",")[0].trim()||"shared";const entry=recent.get(key);if(entry&&entry.count>=8&&entry.until>now)return NextResponse.json({error:"Túl sok kérés. Próbáld később."},{status:429});
   recent.set(key,entry&&entry.until>now?{...entry,count:entry.count+1}:{count:1,until:now+60000});
   if(req.headers.get("content-type")?.split(";")[0]!=="application/json")return NextResponse.json({error:"JSON szükséges."},{status:415});
   if(Number(req.headers.get("content-length")||0)>4096)return NextResponse.json({error:"Túl nagy kérés."},{status:413});
   const raw=await req.text();if(Buffer.byteLength(raw)>4096)return NextResponse.json({error:"Túl nagy kérés."},{status:413});
-  const body=JSON.parse(raw);if(typeof body.url!=="string")throw Error("Hiányzó link.");
-  return NextResponse.json(await download(body.url),{headers:{"Cache-Control":"no-store"}});
+  let body:unknown;
+  try{body=JSON.parse(raw);}catch{return NextResponse.json({error:"Hibás JSON."},{status:400});}
+  if(!body||typeof body!=="object"||typeof (body as {url?:unknown}).url!=="string")return NextResponse.json({error:"Hiányzó link."},{status:400});
+  return NextResponse.json(await download((body as {url:string}).url),{headers:{"Cache-Control":"no-store"}});
  }catch(e){return NextResponse.json({error:e instanceof Error?e.message:"Importhiba."},{status:422});}
 }
