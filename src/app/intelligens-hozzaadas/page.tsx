@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import KnowledgeShell from "@/components/KnowledgeShell";
+import {createBatchDraft,parseBatchDraft,type BatchDraftEntry} from "./batch-draft";
 import { saveLibraryResult, type MotaResult } from "../mota-import/library";
 
 function displayDuration(value:string):string {
@@ -10,7 +11,7 @@ function displayDuration(value:string):string {
  return units.length?units.join(" "):value;
 }
 
-type BatchEntry={url:string;title:string;description:string;ingredients:string[];steps:string[];kind:string;error?:string;selected:boolean;author:string;recipeYield:string;prepTime:string;cookTime:string;image:string;category:string;cuisine:string;calories:string;keywords:string[];saved:boolean;errorPhase?:"analyze"|"save"};
+type BatchEntry=BatchDraftEntry;
 const emptyBatch=(url:string):BatchEntry=>({url,title:"",description:"",ingredients:[],steps:[],kind:"article",selected:false,author:"",recipeYield:"",prepTime:"",cookTime:"",image:"",category:"",cuisine:"",calories:"",keywords:[],saved:false});
 export default function IntelligentAdd() {
   const [url,setUrl]=useState("");
@@ -38,6 +39,31 @@ export default function IntelligentAdd() {
   const [batchMessage,setBatchMessage]=useState("");
   const [batchMode,setBatchMode]=useState<"analyze"|"save"|null>(null);
   const batchAbort=useRef(false);
+  const draftFile=useRef<HTMLInputElement>(null);
+  function exportDraft(){
+    if(batchBusy||!batchResults.length)return;
+    try{
+      const json=createBatchDraft(batchResults);
+      const objectUrl=URL.createObjectURL(new Blob([json],{type:"application/json"}));
+      const a=document.createElement("a");
+      a.href=objectUrl;a.download="tudaskonyvtar-import-munkamenet-"+new Date().toISOString().slice(0,10)+".json";
+      document.body.appendChild(a);a.click();a.remove();
+      setTimeout(()=>URL.revokeObjectURL(objectUrl),1000);
+      setBatchMessage("Munkamenet letöltve. A fájl tartalmazza a még nem mentett szerkesztéseket is.");
+    }catch(e){setBatchMessage(e instanceof Error?e.message:"Nem sikerült a munkamenet exportálása.");}
+  }
+  async function importDraft(file:File|undefined){
+    if(!file||batchBusy)return;
+    if(file.size>1_000_000){setBatchMessage("A munkamenet legfeljebb 1 MB lehet.");return;}
+    try{
+      const parsed=parseBatchDraft(await file.text());
+      if(batchResults.length&&!window.confirm("A jelenlegi többes importálási munkamenetet lecseréljük a fájl tartalmára. Folytatod?"))return;
+      setBatchResults(parsed);setBatchUrls(parsed.map(x=>x.url).join("\n"));setBatchProgress(0);
+      setBatchMessage(parsed.length+" tétel visszatöltve. A korábban mentett jelölések tájékoztató jellegűek, nem adatbázis-ellenőrzés eredményei.");
+    }catch(e){setBatchMessage(e instanceof Error?e.message:"Nem sikerült a munkamenet beolvasása.");}
+    finally{if(draftFile.current)draftFile.current.value="";}
+  }
+
   async function analyzeBatch(retryOnly=false){
     if(batchBusy)return;
     const urls=retryOnly?batchResults.filter(x=>!!x.error&&x.errorPhase==="analyze"&&!x.saved).map(x=>x.url):[...new Set(batchUrls.split(/\\r?\\n/).map(x=>x.trim()).filter(Boolean))];
@@ -152,6 +178,9 @@ export default function IntelligentAdd() {
       <textarea id="batchUrls" style={field} rows={6} value={batchUrls} disabled={batchBusy} onChange={e=>setBatchUrls(e.target.value)} placeholder={"https://pelda.hu/recept-1\\nhttps://pelda.hu/recept-2"}/>
       <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
         <button className="kh-btn secondary" disabled={batchBusy} onClick={()=>analyzeBatch()}>Linkek feldolgozása</button>
+        <button className="kh-btn secondary" disabled={batchBusy||!batchResults.length} onClick={exportDraft}>Munkamenet mentése JSON-ként</button>
+        <button className="kh-btn secondary" disabled={batchBusy} onClick={()=>draftFile.current?.click()}>Munkamenet betöltése</button>
+        <input ref={draftFile} type="file" accept=".json,application/json" style={{display:"none"}} onChange={e=>void importDraft(e.target.files?.[0])}/>
         <button className="kh-btn secondary" disabled={batchBusy||!batchResults.some(x=>x.error&&x.errorPhase==="analyze"&&!x.saved)} onClick={()=>analyzeBatch(true)}>Sikertelen linkek újrapróbálása</button>
         <button className="kh-btn secondary" disabled={batchBusy||!batchResults.some(x=>x.error&&x.errorPhase==="save"&&!x.saved)} onClick={()=>{setBatchResults(old=>old.map(x=>x.errorPhase==="save"?{...x,error:undefined,errorPhase:undefined,selected:true}:x));setBatchMessage("A sikertelen mentések ismét kijelölve. Ellenőrizd őket, majd nyomd meg a mentés gombot.");}}>Mentési hibák újrapróbálása</button>
         <button className="kh-btn" disabled={batchBusy||!batchResults.some(x=>x.selected&&!x.error&&!x.saved&&x.title.trim())} onClick={saveBatch}>Kijelöltek mentése</button>
