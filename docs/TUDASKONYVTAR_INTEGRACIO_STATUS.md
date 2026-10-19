@@ -17,3 +17,10 @@ Fejlesztési ág: `work/tudaskonyvtar-integracio-20261019`. Élesítésre NEM k�
 
 ## Megőrzés
 Ne módosítsuk a meglévő Supabase táblákat, kulcsokat és videókat; ne töröljük a régi útvonalakat. A fejlesztés csak ezen az ágon folytatódik. A központi szabályzat kötelező.
+
+## 2026-10-19 – Automatikus HTML-import GitHubon
+- API: `src/app/api/intelligens-hozzaadas/route.ts`: nyilvános IPv4-re korlátozott, DNS-ellenőrzött és IP-hez kötött `undici` HTTP(S) lekérés; átirányítás és méretkorlát; JSON-LD Recipe, cikkbekezdések feldolgozása.
+- UI: `src/app/intelligens-hozzaadas/page.tsx`: „Weboldal feldolgozása” → szerkeszthető mezők → explicit Supabase mentés; kézi rögzítés megmaradt.
+- `package.json`: `undici` hozzáadva.
+- **Kiadást blokkol:** a GitHub-módosításokhoz nem futott teljes Next.js build vagy éles webes próba. Nincs lockfile-frissítés. Az SSRF védelem, HTML-kódolás és rate limit további biztonsági tesztje szükséges. Az IPv6 címek jelenleg elutasítottak. A rate limit csak szerverpéldányonként működik. A PDF és a közösségi videók nem részei ennek az API-nak.
+- A production változat és az adatbázis változatlan. Ne merge-eljük ellenőrzés nélkül.
