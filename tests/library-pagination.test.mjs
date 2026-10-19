@@ -53,10 +53,14 @@ test("restore creates a new record without using merge-duplicates",async()=>{
   return {ok:true,status:201,text:async()=>JSON.stringify([{id:"new-1",title:"New recipe"}])};
  }};
  vm.runInNewContext(code,sandbox);
- const result=await sandbox.exports.restoreLibraryItemIfMissing({source_url:"https://example.com/new",title:"New recipe",platform:"web"});
+ const result=await sandbox.exports.restoreLibraryItemIfMissing({source_url:"https://example.com/new",title:"New recipe",platform:"web"},{favorite:true,for_competition:false,status:"to_try",note:"keep",tags:["desszert"]});
  assert.equal(result.id,"new-1");
  assert.equal(calls.length,1);
  assert.equal(calls[0].init.method,"POST");
  assert.match(calls[0].init.headers.Prefer,/ignore-duplicates/);
  assert.equal(JSON.parse(calls[0].init.body).source_url,"https://example.com/new");
+ assert.equal(JSON.parse(calls[0].init.body).favorite,true);
+ assert.equal(JSON.parse(calls[0].init.body).status,"to_try");
+ assert.equal(JSON.parse(calls[0].init.body).note,"keep");
+ assert.deepEqual(JSON.parse(calls[0].init.body).tags,["desszert"]);
 });
