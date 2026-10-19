@@ -74,5 +74,6 @@ export function parseLibraryBackup(raw:string):LibraryBackup {
     return item;
   });
   if(obj.item_count!==items.length)throw Error("Eltér a mentés elemszáma.");
+  if(typeof obj.exported_at!=="string"||!Number.isFinite(Date.parse(obj.exported_at)))throw Error("Hiányzó vagy hibás mentési dátum.");
   return obj as LibraryBackup;
 }
