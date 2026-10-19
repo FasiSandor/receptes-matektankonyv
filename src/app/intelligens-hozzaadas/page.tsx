@@ -3,6 +3,13 @@ import { useEffect, useRef, useState } from "react";
 import KnowledgeShell from "@/components/KnowledgeShell";
 import { saveLibraryResult, type MotaResult } from "../mota-import/library";
 
+function displayDuration(value:string):string {
+ const match=/^P(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)?$/i.exec(value);
+ if(!match)return value;
+ const units=[match[1]&&match[1]+" nap",match[2]&&match[2]+" óra",match[3]&&match[3]+" perc",match[4]&&match[4]+" másodperc"].filter(Boolean);
+ return units.length?units.join(" "):value;
+}
+
 export default function IntelligentAdd() {
   const [url,setUrl]=useState("");
   const [title,setTitle]=useState("");
@@ -45,7 +52,7 @@ export default function IntelligentAdd() {
       setTitle(result.title||"");setSummary(result.description||(result.paragraphs||[]).slice(0,3).join("\n"));
       setCategory(result.category||"");setCuisine(result.cuisine||"");setCalories(result.calories||"");setKeywords((result.keywords||[]).join(", "));
       setSourceKind(result.kind==="recipe"?"recipe":"article");
-      setAuthor(result.author||"");setYieldText(result.recipeYield||"");setPrepTime(result.prepTime||"");setCookTime(result.cookTime||"");setImage(result.image||"");
+      setAuthor(result.author||"");setYieldText(result.recipeYield||"");setPrepTime(displayDuration(result.prepTime||""));setCookTime(displayDuration(result.cookTime||""));setImage(result.image||"");
       setIngredients((result.ingredients||[]).join("\n"));
       setSteps((result.steps?.length?result.steps:result.paragraphs||[]).join("\n"));
     }catch(e){if(id===requestId.current)setError(e instanceof Error?e.message:"Feldolgozási hiba. Kézzel is rögzítheted.");}
@@ -76,8 +83,8 @@ export default function IntelligentAdd() {
       {image&&<div style={{maxWidth:360}}><img src={image} alt="Forrásoldal receptképe" referrerPolicy="no-referrer" style={{width:"100%",maxHeight:240,objectFit:"contain",borderRadius:10}} onError={()=>setImage("")}/><p className="kh-muted">A kép a forrásoldalról töltődik be, nem kerül külön feltöltésre.</p></div>}
       <label htmlFor="author">Szerző / forrás</label><input id="author" style={field} value={author} onChange={e=>setAuthor(e.target.value)}/>
       <label htmlFor="yield">Adagszám / mennyiség</label><input id="yield" style={field} value={yieldText} onChange={e=>setYieldText(e.target.value)}/>
-      <label htmlFor="prepTime">Előkészítési idő (ISO 8601 vagy kézi szöveg)</label><input id="prepTime" style={field} value={prepTime} onChange={e=>setPrepTime(e.target.value)}/>
-      <label htmlFor="cookTime">Elkészítési idő (ISO 8601 vagy kézi szöveg)</label><input id="cookTime" style={field} value={cookTime} onChange={e=>setCookTime(e.target.value)}/>
+      <label htmlFor="prepTime">Előkészítési idő</label><input id="prepTime" style={field} value={prepTime} onChange={e=>setPrepTime(e.target.value)}/>
+      <label htmlFor="cookTime">Elkészítési idő</label><input id="cookTime" style={field} value={cookTime} onChange={e=>setCookTime(e.target.value)}/>
       <label htmlFor="imageUrl">Receptkép webcíme (szerkeszthető)</label><input id="imageUrl" style={field} type="url" value={image} onChange={e=>setImage(e.target.value)}/>
       <label htmlFor="category">Receptkategória</label><input id="category" style={field} value={category} onChange={e=>setCategory(e.target.value)}/>
       <label htmlFor="cuisine">Konyha / nemzetiség</label><input id="cuisine" style={field} value={cuisine} onChange={e=>setCuisine(e.target.value)}/>
