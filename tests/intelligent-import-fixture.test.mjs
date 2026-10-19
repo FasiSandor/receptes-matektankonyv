@@ -70,3 +70,18 @@ test("recipe category, cuisine, keywords and source-declared calories are extrac
  assert.equal(result.keywords.length,2);
  assert.equal(result.keywords[1],"ünnepi");
 });
+
+test("schema.org full Recipe type, nested ImageObject and HowTo item wrappers",()=>{
+ const html=`<script type="application/ld+json">{"@graph":[{"@type":"https://schema.org/Recipe","name":"Klasszikus gulyás","image":[{"@type":"ImageObject","contentUrl":"/gulyas.jpg"}],"recipeInstructions":[{"@type":"HowToSection","itemListElement":[{"@type":"ListItem","item":{"@type":"HowToStep","text":"Pirítjuk a hagymát."}},{"@type":"HowToStep","text":"Hozzáadjuk a húst."}]}]}]}</script>`;
+ const result=extract(html,"https://example.com/receptek/gulyas");
+ assert.equal(result.kind,"recipe");
+ assert.equal(result.title,"Klasszikus gulyás");
+ assert.equal(result.image,"https://example.com/gulyas.jpg");
+ assert.deepEqual(Array.from(result.steps),["Pirítjuk a hagymát.","Hozzáadjuk a húst."]);
+});
+test("recipe type arrays and direct ImageObject URLs",()=>{
+ const html=`<script type="application/ld+json">{"@type":["Thing","http://schema.org/Recipe"],"name":"Pörkölt","image":{"url":"https://cdn.example.com/porkolt.jpg"}}</script>`;
+ const result=extract(html,"https://example.com/recipe");
+ assert.equal(result.kind,"recipe");
+ assert.equal(result.image,"https://cdn.example.com/porkolt.jpg");
+});
