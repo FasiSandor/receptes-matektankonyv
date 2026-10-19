@@ -271,7 +271,15 @@ export async function saveLibraryResult(result: MotaResult): Promise<LibraryItem
 }
 
 export async function listLibraryItems(): Promise<LibraryItem[]> {
-  return await api("mota_import_items?select=*&order=created_at.desc&limit=500") as LibraryItem[];
+  const result:LibraryItem[]=[];
+  const PAGE_SIZE=500;
+  for(let offset=0;offset<100000;offset+=PAGE_SIZE){
+    const page=await api("mota_import_items?select=*&order=created_at.desc,id.desc&limit="+PAGE_SIZE+"&offset="+offset) as LibraryItem[];
+    if(!Array.isArray(page))throw Error("Hibás gyűjteményválasz.");
+    result.push(...page);
+    if(page.length<PAGE_SIZE)return result;
+  }
+  throw Error("A gyűjtemény túl nagy az automatikus betöltéshez.");
 }
 
 export async function updateLibraryItem(id: string, patch: Partial<Pick<LibraryItem,
