@@ -27,11 +27,11 @@ function decode(s:string) {return s.replace(/&#(x[0-9a-f]+|\d+);/gi,(_m,v:string
 function clean(s:string){return decode(s.replace(/<[^>]+>/g," ")).replace(/\s+/g," ").trim();}
 function extract(html:string,url:string){
  let recipe:Record<string,unknown>|null=null;
- function walk(v:unknown):void{if(!v||typeof v!=="object")return;if(Array.isArray(v)){v.forEach(walk);return;}const o=v as Record<string,unknown>;const t=o["@type"];if((typeof t==="string"&&t.toLowerCase()==="recipe")||(Array.isArray(t)&&t.includes("Recipe"))){recipe=o;return;}walk(o["@graph"]);walk(o.mainEntity);}
+ function walk(v:unknown):void{if(!v||typeof v!=="object")return;if(Array.isArray(v)){v.forEach(walk);return;}const o=v as Record<string,unknown>;const t=o["@type"];if((typeof t==="string"&&t.toLowerCase()==="recipe")||(Array.isArray(t)&&t.includes("Recipe"))){recipe=o;return;}walk(o["@graph"]);walk(o.mainEntity);walk(o.itemListElement);}
  for(const m of html.matchAll(/<script\b(?=[^>]*type\s*=\s*["']application\/ld\+json["'])[^>]*>([\s\S]*?)<\/script>/gi)){try{walk(JSON.parse(m[1]));if(recipe)break;}catch{/* skip invalid JSON-LD */}}
  const r=recipe as Record<string,unknown>|null;
  const str=(v:unknown)=>typeof v==="string"?clean(v):"";
- const steps=(v:unknown):string[]=>Array.isArray(v)?v.flatMap(steps):typeof v==="string"?[clean(v)]:v&&typeof v==="object"?steps((v as Record<string,unknown>).itemListElement||(v as Record<string,unknown>).text):[];
+ const steps=(v:unknown):string[]=>Array.isArray(v)?v.flatMap(steps):typeof v==="string"?[clean(v)]:v&&typeof v==="object"?steps((v as Record<string,unknown>).itemListElement||(v as Record<string,unknown>).text||(v as Record<string,unknown>).name):[];
  const title=str(r?.name)||clean(html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]||"")||"Névtelen oldal";
  const body=html.replace(/<(script|style|nav|footer|header|aside|form|iframe|noscript|svg)\b[^>]*>[\s\S]*?<\/\1>/gi," ");
  const main=body.match(/<(article|main)\b[^>]*>([\s\S]*?)<\/\1>/i)?.[2]||body;
