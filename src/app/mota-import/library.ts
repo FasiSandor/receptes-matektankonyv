@@ -177,6 +177,7 @@ export async function uploadLibraryVideo(itemId: string, blob: Blob): Promise<st
 
 export async function createLibraryVideoUrl(path: string, expiresIn = 3600): Promise<string> {
   if (!path) return "";
+  if (!Number.isInteger(expiresIn) || expiresIn < 60 || expiresIn > 3600) throw new Error("Érvénytelen videólink-lejárat.");
   const key = getLibraryKey();
   const keyHash = await hashLibraryKey(key);
   if (!path.startsWith(`${keyHash}/`)) return "";
