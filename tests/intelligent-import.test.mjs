@@ -10,7 +10,7 @@ test("server-side route uses pinned IP transport",()=>{assert.match(api,/lookup:
 test("redirects are validated",()=>{assert.match(api,/new URL\(location,u\)/);assert.match(api,/validate\(current\)/);});
 test("HTML response size is bounded",()=>{assert.match(api,/MAX_BYTES/);assert.match(api,/size\s*>\s*MAX_BYTES/);});
 test("no arbitrary script execution",()=>{assert.doesNotMatch(api,/\beval\s*\(/);});
-test("existing collection is reused",()=>{assert.match(ui,/saveLibraryResult/);});
+test("existing collection is reused without overwriting",()=>{assert.match(ui,/restoreLibraryItemIfMissing/);});
 test("user reviews result before save",()=>{assert.match(ui,/setTitle\(/);assert.match(ui,/setIngredients\(/);assert.match(ui,/setSteps\(/);});
 test("social imports keep their route",()=>{assert.match(home,/mota-import\?url/);});
 
