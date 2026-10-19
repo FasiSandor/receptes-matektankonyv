@@ -356,7 +356,9 @@ export async function updateLibraryItem(id: string, patch: Partial<Pick<LibraryI
     body: JSON.stringify({ ...patch, updated_at: new Date().toISOString() }),
   }) as LibraryItem[];
 
-  if (!rows?.[0]) throw new Error("A módosítás nem sikerült.");
+  if (!Array.isArray(rows) || rows.length !== 1 || rows[0].id !== id) {
+    throw new Error("A recept módosítása nem igazolható.");
+  }
   return rows[0];
 }
 
