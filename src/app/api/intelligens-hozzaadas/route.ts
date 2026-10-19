@@ -60,10 +60,15 @@ function extract(html:string,url:string){
  const imageRaw=typeof imageValue==="string"?imageValue:Array.isArray(imageValue)?imageValue.find(v=>typeof v==="string")||"":imageValue&&typeof imageValue==="object"?str((imageValue as Record<string,unknown>).url):"";
  const imageCandidate=imageRaw||metaValue("og:image")||metaValue("twitter:image");
  const image=normalizeImage(imageCandidate);
+ const keywords=Array.isArray(r?.keywords)?r.keywords.filter((v):v is string=>typeof v==="string").map(clean):typeof r?.keywords==="string"?r.keywords.split(",").map(clean):[];
+ const category=str(r?.recipeCategory);
+ const cuisine=str(r?.recipeCuisine);
+ const nutrition=r?.nutrition&&typeof r.nutrition==="object"?r.nutrition as Record<string,unknown>:null;
+ const calories=str(nutrition?.calories);
  const body=html.replace(/<(script|style|nav|footer|header|aside|form|iframe|noscript|svg)\b[^>]*>[\s\S]*?<\/\1>/gi," ");
  const main=body.match(/<(article|main)\b[^>]*>([\s\S]*?)<\/\1>/i)?.[2]||body;
  const paragraphs=[...main.matchAll(/<(p|h[1-6]|li)\b[^>]*>([\s\S]*?)<\/\1>/gi)].map(m=>clean(m[2])).filter(s=>s.length>=25&&!/^(cookie|privacy|hirdetés|feliratkozás|subscribe)/i.test(s)).slice(0,120);
- return {kind:recipe?"recipe":"article",source_url:url,title:title.slice(0,300),description:str(r?.description)||clean(metaDescription),author,recipeYield:yieldText,prepTime:time(r?.prepTime),cookTime:time(r?.cookTime),totalTime:time(r?.totalTime),image,ingredients:Array.isArray(r?.recipeIngredient)?r.recipeIngredient.map(ingredient).filter(Boolean):[],steps:steps(r?.recipeInstructions),paragraphs};
+ return {kind:recipe?"recipe":"article",source_url:url,title:title.slice(0,300),description:str(r?.description)||clean(metaDescription),author,recipeYield:yieldText,prepTime:time(r?.prepTime),cookTime:time(r?.cookTime),totalTime:time(r?.totalTime),image,category,cuisine,keywords:keywords.filter(Boolean).slice(0,20),calories,ingredients:Array.isArray(r?.recipeIngredient)?r.recipeIngredient.map(ingredient).filter(Boolean):[],steps:steps(r?.recipeInstructions),paragraphs};
 }
 async function download(raw:string){
  let current=raw;
