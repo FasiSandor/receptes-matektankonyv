@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   createLibraryVideoUrl,
   restoreLibraryItemIfMissing,
@@ -334,7 +334,11 @@ export default function CollectionPage() {
     }finally{setBackupBusy(false);}
   }
 
+  const backupInspectionSequence = useRef(0);
+
   async function inspectBackup(file:File) {
+    if(restoreBusy)return;
+    const inspection=++backupInspectionSequence.current;
     setRestorePreview(null);
     setRestoreProgress(0);
     setRestoreErrors([]);
@@ -343,16 +347,18 @@ export default function CollectionPage() {
     try{
       const parsed=parseLibraryBackup(await file.text());
       const current=await listLibraryItems();
+      if(inspection!==backupInspectionSequence.current)return;
       const urls=new Set(current.map(item=>item.source_url));
       setRestoreExisting(parsed.items.filter(entry=>urls.has(entry.source_url)).length);
       setRestorePreview(parsed);
       setMessage("Mentés ellenőrizve: "+parsed.item_count+" elem. Még semmi nem lett visszaállítva.");
-    }catch(error){setMessage(error instanceof Error?error.message:"A mentés nem olvasható.");}
+    }catch(error){if(inspection===backupInspectionSequence.current)setMessage(error instanceof Error?error.message:"A mentés nem olvasható.");}
   }
 
   async function restoreBackup() {
     if(!restorePreview||restoreBusy)return;
     if(!confirm("Hozzáadod a mentésből a hiányzó elemeket? A meglévő rekordokat változatlanul hagyjuk. A videófájlok nem állnak vissza."))return;
+    backupInspectionSequence.current++;
     setRestoreBusy(true);
     setRestoreProgress(0);
     setRestoreErrors([]);
