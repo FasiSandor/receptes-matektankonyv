@@ -111,7 +111,7 @@ export async function POST(req:NextRequest){
  try{
   const origin=req.headers.get("origin");if(origin&&new URL(origin).origin!==req.nextUrl.origin)return NextResponse.json({error:"Érvénytelen eredet."},{status:403});
   const now=Date.now();for(const [k,v] of recent)if(v.until<now)recent.delete(k);
-  const key=(req.headers.get("x-forwarded-for")||"").split(",")[0].trim()||"shared";const entry=recent.get(key);if(entry&&entry.count>=8&&entry.until>now)return NextResponse.json({error:"Túl sok kérés. Próbáld később."},{status:429});
+  // Do not trust client-supplied forwarding headers for rate-limit identity.\n  // A shared bucket is conservative until a trusted edge-backed limiter is configured.\n  const key="shared";const entry=recent.get(key);if(entry&&entry.count>=8&&entry.until>now)return NextResponse.json({error:"Túl sok kérés. Próbáld később."},{status:429});
   recent.set(key,entry&&entry.until>now?{...entry,count:entry.count+1}:{count:1,until:now+60000});
   if(req.headers.get("content-type")?.split(";")[0]!=="application/json")return NextResponse.json({error:"JSON szükséges."},{status:415});
   if(Number(req.headers.get("content-length")||0)>4096)return NextResponse.json({error:"Túl nagy kérés."},{status:413});
