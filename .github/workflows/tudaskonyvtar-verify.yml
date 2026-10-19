@@ -24,3 +24,6 @@ jobs:
         run: npm run build
       - name: Importer regression tests
         run: node --test tests/intelligent-import.test.mjs
+
+      - name: Local API integration tests (no deploy)
+        run: node --test tests/intelligent-import-api.test.mjs
