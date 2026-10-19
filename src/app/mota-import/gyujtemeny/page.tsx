@@ -424,19 +424,35 @@ export default function CollectionPage() {
         item_count:restoreFailedEntries.length,
         items:restoreFailedEntries
       };
-      const json=JSON.stringify(remainder,null,2);
-      parseLibraryBackup(json);
-      const blob=new Blob([json],{type:"application/json"});
-      if(blob.size>50_000_000)throw Error("A hátralévő mentés túl nagy.");
-      const href=URL.createObjectURL(blob);
-      const link=document.createElement("a");
-      link.href=href;
-      link.download="tudaskonyvtar-hatralevo-"+new Date().toISOString().slice(0,10)+".json";
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      setTimeout(()=>URL.revokeObjectURL(href),1000);
-      setMessage(remainder.item_count+" feldolgozatlan vagy hibás recept külön mentése elkészült.");
+      // Repartition remaining entries so every download is independently restorable.
+      const parts:LibraryBackup[]=[];
+      const makeParts=(entries:LibraryBackup["items"]):void=>{
+        const part:LibraryBackup={...remainder,item_count:entries.length,items:entries};
+        const json=JSON.stringify(part,null,2);
+        if(entries.length<=10000&&new Blob([json]).size<=50_000_000){
+          parseLibraryBackup(json);
+          parts.push(part);
+          return;
+        }
+        if(entries.length===1)throw Error("Egyetlen hátralévő recept meghaladja a mentési korlátot.");
+        const mid=Math.floor(entries.length/2);
+        makeParts(entries.slice(0,mid));
+        makeParts(entries.slice(mid));
+      };
+      makeParts(restoreFailedEntries);
+      if(parts.length>1&&!confirm("A hátralévő receptek "+parts.length+" külön mentésbe férnek. Mindegyiket töltsd le. Folytatod?"))return;
+      for(const [index,part] of parts.entries()){
+        const blob=new Blob([JSON.stringify(part,null,2)],{type:"application/json"});
+        const href=URL.createObjectURL(blob);
+        const link=document.createElement("a");
+        link.href=href;
+        link.download="tudaskonyvtar-hatralevo-"+new Date().toISOString().slice(0,10)+(parts.length>1?"-"+String(index+1).padStart(2,"0")+"-of-"+String(parts.length).padStart(2,"0"):"")+".json";
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(()=>URL.revokeObjectURL(href),1000);
+      }
+      setMessage(remainder.item_count+" feldolgozatlan vagy hibás recept "+parts.length+" külön mentése elkészült.");
     }catch(error){setMessage(error instanceof Error?error.message:"A hátralévő elemek mentése nem sikerült.");}
   }
 
