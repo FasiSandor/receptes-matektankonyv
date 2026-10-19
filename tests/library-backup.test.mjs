@@ -6,7 +6,7 @@ import vm from "node:vm";
 
 const source=readFileSync(new URL("../src/app/mota-import/library-backup.ts",import.meta.url),"utf8");
 const code=ts.transpileModule(source+"\nglobalThis.backupApi={createLibraryBackup,parseLibraryBackup,BACKUP_FORMAT};",{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.None}}).outputText.replace(/export \{\};?/g,"");
-const sandbox={URL,Date,JSON,Error};vm.runInNewContext(code,sandbox);
+const sandbox={URL,Date,JSON,Error,exports:{}};vm.runInNewContext(code,sandbox);
 const {createLibraryBackup,parseLibraryBackup,BACKUP_FORMAT}=sandbox.backupApi;
 const item={source_url:"https://example.com/recipe",title:"Teszt recept",platform:"weboldal",recipe_group:"Főétel",hungarian_summary:"Leírás",ingredients:[{name:"liszt",amount:"20 dkg"}],method_steps:["Keverjük össze."],content_tags:[],ingredient_tags:[],tags:[],raw_result:{title:"Régi cím",source_url:"https://example.com/recipe",platform:"weboldal"},favorite:true,for_competition:false,status:"tested",note:"Saját megjegyzés"};
 test("backup exports current visible recipe fields and preferences",()=>{
