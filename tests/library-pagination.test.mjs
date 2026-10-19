@@ -26,14 +26,14 @@ test("library pagination retrieves all records across three pages without trunca
 });
 
 test("library pagination rejects malformed server responses",async()=>{
- const sandbox={exports:{},URL,Date,JSON,TextEncoder,Uint8Array,crypto:webcrypto,localStorage:{getItem(){return "test-library-key-1234567890";}},fetch:async()=>({ok:true,status:200,text:async()=>'{"unexpected":"object"}'})};
+ const sandbox={exports:{},URL,Date,JSON,TextEncoder,Uint8Array,crypto:webcrypto,window:{},localStorage:{getItem(){return "test-library-key-1234567890";}},fetch:async()=>({ok:true,status:200,text:async()=>'{"unexpected":"object"}'})};
  vm.runInNewContext(code,sandbox);
  await assert.rejects(()=>sandbox.exports.listLibraryItems(),/Hibás gyűjteményválasz/);
 });
 
 test("restore inserts missing records with ignore-duplicates rather than upsert",async()=>{
  const calls=[];
- const sandbox={exports:{},URL,Date,JSON,TextEncoder,Uint8Array,crypto:webcrypto,localStorage:{getItem(){return "test-library-key-1234567890";}},fetch:async(url,init)=>{
+ const sandbox={exports:{},URL,Date,JSON,TextEncoder,Uint8Array,crypto:webcrypto,window:{},localStorage:{getItem(){return "test-library-key-1234567890";}},fetch:async(url,init)=>{
   calls.push({url,init});
   return {ok:true,status:201,text:async()=>JSON.stringify([])};
  }};
@@ -41,6 +41,7 @@ test("restore inserts missing records with ignore-duplicates rather than upsert"
  const restored=await sandbox.exports.restoreLibraryItemIfMissing({source_url:"https://example.com/recipe",title:"Test recipe",platform:"web"});
  assert.equal(restored,null);
  assert.equal(calls.length,1);
+ assert.equal(calls[0].init.headers["x-mota-library-key"],"test-library-key-1234567890");
  assert.match(calls[0].url,/on_conflict=library_key_hash,source_url/);
  assert.match(calls[0].init.headers.Prefer,/resolution=ignore-duplicates/);
  assert.doesNotMatch(calls[0].init.headers.Prefer,/merge-duplicates/);
