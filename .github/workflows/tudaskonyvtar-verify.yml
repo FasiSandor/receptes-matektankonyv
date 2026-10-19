@@ -33,3 +33,6 @@ jobs:
 
       - name: Recipe extraction fixture tests
         run: node --test tests/intelligent-import-fixture.test.mjs
+
+      - name: Library backup validation tests
+        run: node --test tests/library-backup.test.mjs
