@@ -144,7 +144,8 @@ export async function uploadLibraryVideo(itemId: string, blob: Blob): Promise<st
   const key = getLibraryKey();
   const keyHash = await hashLibraryKey(key);
   const ext = blob.type === "video/quicktime" ? "mov" : blob.type === "video/webm" ? "webm" : "mp4";
-  const path = `${keyHash}/${itemId}.${ext}`;
+  // Use a unique object name: cleanup must never delete a pre-existing video.
+  const path = `${keyHash}/${itemId}-${crypto.randomUUID()}.${ext}`;
 
   const response = await fetch(
     `${SUPABASE_URL}/storage/v1/object/${VIDEO_BUCKET}/${encodeStoragePath(path)}`,
@@ -154,7 +155,7 @@ export async function uploadLibraryVideo(itemId: string, blob: Blob): Promise<st
         apikey: SUPABASE_KEY,
         "x-mota-library-key": key,
         "Content-Type": blob.type || "video/mp4",
-        "x-upsert": "true",
+        "x-upsert": "false",
       },
       body: blob,
     }
