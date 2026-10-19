@@ -1,0 +1,46 @@
+"use client";
+import { useEffect, useState } from "react";
+import KnowledgeShell from "@/components/KnowledgeShell";
+import { saveLibraryResult, type MotaResult } from "../mota-import/library";
+
+export default function IntelligentAdd() {
+  const [url,setUrl]=useState("");
+  const [title,setTitle]=useState("");
+  const [summary,setSummary]=useState("");
+  const [ingredients,setIngredients]=useState("");
+  const [steps,setSteps]=useState("");
+  const [error,setError]=useState("");
+  const [busy,setBusy]=useState(false);
+  const [saved,setSaved]=useState(false);
+  useEffect(()=>{setUrl(new URLSearchParams(window.location.search).get("url")||"")},[]);
+  const field:React.CSSProperties={width:"100%",padding:12,border:"1px solid #334155",borderRadius:10,background:"#111827",color:"#f8fafc",font:"inherit"};
+  async function save() {
+    setError("");setSaved(false);
+    let source:URL;
+    try {source=new URL(url.trim());if(!["https:","http:"].includes(source.protocol)||source.username||source.password)throw Error();}
+    catch {setError("Adj meg egy érvényes nyilvános HTTP(S) forráslinket.");return;}
+    if(!title.trim()){setError("A cím megadása kötelező.");return;}
+    setBusy(true);
+    try {
+      const result:MotaResult={source_url:source.toString(),title:title.trim(),platform:"weboldal",hungarian_summary:summary.trim(),recipe_group:ingredients.trim()?"Webes receptek":"Szakmai cikkek",ingredients:ingredients.split("\n").map(name=>({name:name.trim()})).filter(x=>x.name),method_steps:steps.split("\n").map(s=>s.trim()).filter(Boolean),content_tags:["weboldal"]};
+      await saveLibraryResult(result);setSaved(true);
+    }catch(e){setError(e instanceof Error?e.message:"Nem sikerült a mentés.");}
+    finally{setBusy(false);}
+  }
+  return <KnowledgeShell>
+    <header className="kh-brand"><div className="kh-mark">✧</div><div><h1 className="kh-title">Intelligens hozzáadás</h1><p className="kh-sub">WEBOLDAL · RECEPT · CIKK</p></div></header>
+    <section className="kh-card" style={{display:"grid",gap:12}}>
+      <h2>Forrás rögzítése</h2>
+      <p className="kh-muted">A weboldalak automatikus kinyerése még fejlesztés alatt áll. Addig a forráslinket és a tartalmat kézzel, biztonságosan elmentheted a meglévő gyűjteményedbe.</p>
+      <label htmlFor="source">Eredeti webcím</label><input id="source" style={field} type="url" value={url} onChange={e=>setUrl(e.target.value)} placeholder="https://..."/>
+      <label htmlFor="title">Cím</label><input id="title" style={field} value={title} onChange={e=>setTitle(e.target.value)}/>
+      <label htmlFor="summary">Összefoglaló</label><textarea id="summary" style={field} rows={3} value={summary} onChange={e=>setSummary(e.target.value)}/>
+      <label htmlFor="ingredients">Hozzávalók (soronként)</label><textarea id="ingredients" style={field} rows={5} value={ingredients} onChange={e=>setIngredients(e.target.value)}/>
+      <label htmlFor="steps">Elkészítés vagy cikk tartalma (soronként)</label><textarea id="steps" style={field} rows={8} value={steps} onChange={e=>setSteps(e.target.value)}/>
+      {error&&<p role="alert" style={{color:"#fca5a5"}}>{error}</p>}
+      {saved&&<p role="status" style={{color:"#22c55e"}}>Mentve a gyűjteménybe.</p>}
+      <button className="kh-btn" disabled={busy} onClick={save}>{busy?"Mentés…":"Mentés a gyűjteménybe"}</button>
+      <a className="kh-btn secondary" href="/mota-import/gyujtemeny">Gyűjtemény megnyitása</a>
+    </section>
+  </KnowledgeShell>;
+}
