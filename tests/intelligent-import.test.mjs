@@ -102,3 +102,9 @@ test("restore can stop safely and resume the unprocessed tail",()=>{
  assert.match(page,/feldolgozatlan elem folytatása/);
  assert.match(page,/if\(!failed\.length&&!stopped\)setRestorePreview\(null\)/);
 });
+
+test("cancelled backup reports unprocessed items separately from failed items",()=>{
+ const page=readFileSync(new URL("../src/app/mota-import/gyujtemeny/page.tsx",import.meta.url),"utf8");
+ assert.match(page,/pending:stopped\?failedEntries\.length-failed\.length:0/);
+ assert.match(page,/\{restoreSummary\.pending\} feldolgozatlan elem/);
+});
