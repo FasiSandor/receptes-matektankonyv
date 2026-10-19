@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
   createLibraryVideoUrl,
+  saveLibraryResult,
   deleteLibraryItem,
   getLibraryKey,
   LibraryItem,
@@ -13,7 +14,7 @@ import {
   updateLibraryItem,
 } from "../library";
 import styles from "./Collection.module.css";
-import { createLibraryBackup } from "../library-backup";
+import { createLibraryBackup, parseLibraryBackup, type LibraryBackup } from "../library-backup";
 
 type Filter = "all" | "favorite" | "competition" | "to_try" | "tested";
 
@@ -143,6 +144,8 @@ export default function CollectionPage() {
   const [showTop, setShowTop] = useState(false);
   const [quickOpen, setQuickOpen] = useState(false);
   const [quickUrl, setQuickUrl] = useState("");
+  const [restorePreview,setRestorePreview] = useState<LibraryBackup|null>(null);
+  const [restoreBusy,setRestoreBusy] = useState(false);
 
   async function reload() {
     try {
@@ -318,6 +321,36 @@ export default function CollectionPage() {
     } catch(error) {
       setMessage(error instanceof Error?error.message:"A mentés nem sikerült.");
     }
+  }
+
+  async function inspectBackup(file:File) {
+    setRestorePreview(null);
+    if(file.size>12_000_000){setMessage("A mentés túl nagy.");return;}
+    try{
+      const parsed=parseLibraryBackup(await file.text());
+      setRestorePreview(parsed);
+      setMessage("Mentés ellenőrizve: "+parsed.item_count+" elem. Még semmi nem lett visszaállítva.");
+    }catch(error){setMessage(error instanceof Error?error.message:"A mentés nem olvasható.");}
+  }
+
+  async function restoreBackup() {
+    if(!restorePreview||restoreBusy)return;
+    if(!confirm("Visszaállítod a mentés "+restorePreview.item_count+" elemét? Azonos forráslink esetén a meglévő rekord frissül. A videófájlok nem állnak vissza."))return;
+    setRestoreBusy(true);
+    let done=0;
+    try{
+      for(const entry of restorePreview.items){
+        const saved=await saveLibraryResult(entry.result);
+        await updateLibraryItem(saved.id,{favorite:entry.favorite,for_competition:entry.for_competition,status:entry.status,note:entry.note,tags:entry.tags});
+        done++;
+      }
+      setRestorePreview(null);
+      setMessage(done+" elem visszaállítva.");
+      await reload();
+    }catch(error){
+      setMessage(done+" elem feldolgozva, majd hiba történt: "+(error instanceof Error?error.message:"Ismeretlen hiba.")+" A művelet részben végrehajtódhatott.");
+      await reload();
+    }finally{setRestoreBusy(false);}
   }
 
   async function copyKey() {
@@ -741,6 +774,15 @@ export default function CollectionPage() {
           </section>
         </div>
       ) : null}
+
+      <section className={styles.device}>
+        <div style={{padding:16,display:"grid",gap:10}}>
+          <strong>Biztonsági mentés visszaállítása</strong>
+          <small>Először ellenőrizzük a JSON fájlt. Az adatok csak a jóváhagyásod után kerülnek a gyűjteménybe. A meglévő rekordok azonos forráslink esetén frissülnek.</small>
+          <input type="file" accept=".json,application/json" aria-label="Gyűjtemény biztonsági mentés kiválasztása" onChange={e=>{const file=e.target.files?.[0];if(file)void inspectBackup(file);e.target.value="";}}/>
+          {restorePreview&&<div><p>{restorePreview.item_count} ellenőrzött elem · {restorePreview.exported_at}</p><button type="button" disabled={restoreBusy} onClick={()=>void restoreBackup()}>{restoreBusy?"Visszaállítás folyamatban…":"Jóváhagyás és visszaállítás"}</button><button type="button" disabled={restoreBusy} onClick={()=>setRestorePreview(null)}>Mégse</button></div>}
+        </div>
+      </section>
 
       <section className={styles.device}>
         <div className={styles.deviceIntro}>
