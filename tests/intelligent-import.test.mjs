@@ -44,3 +44,12 @@ test('accented Hungarian unit names do not depend on ASCII word boundaries',()=>
 test('ingredient amount separator supports dash and colon',()=>{ assert.ok(ui.includes('[-–:]?')); });
 
 test("collection listing paginates beyond first 500 rows",()=>{assert.match(library,/offset=\"\+offset/);assert.match(library,/page\.length<PAGE_SIZE/);});
+
+test("restore UI uses insert-only API, tracks individual failures and disables file input while restoring",()=>{
+ const page=readFileSync(new URL("../src/app/mota-import/gyujtemeny/page.tsx",import.meta.url),"utf8");
+ assert.match(page,/restoreLibraryItemIfMissing\(entry\.result\)/);
+ assert.doesNotMatch(page,/saveLibraryResult\(entry\.result\)/);
+ assert.match(page,/const failed:string\[\]=\[\]/);
+ assert.match(page,/setRestoreProgress\(index\+1\)/);
+ assert.match(page,/type="file" disabled=\{restoreBusy\}/);
+});
