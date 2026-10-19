@@ -166,3 +166,9 @@ test("bulk preflight canonicalizes equivalent source URL forms",()=>{
  assert.match(ui,/new URL\(x\)\.toString\(\)/);
  assert.match(ui,/new URL\(x\.trim\(\)\)/);
 });
+
+test("single URL import preserves previously saved library entries",()=>{
+ assert.match(ui,/const inserted=await restoreLibraryItemIfMissing\(result\)/);
+ assert.match(ui,/A meglévő receptet nem módosítottuk/);
+ assert.doesNotMatch(ui,/await saveLibraryResult\(result\)/);
+});
