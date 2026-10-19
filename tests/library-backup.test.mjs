@@ -71,3 +71,12 @@ test("backup rejects oversized metadata tags",()=>{
  a.items[0].tags=["x".repeat(1001)];
  assert.throws(()=>parseLibraryBackup(JSON.stringify(a)));
 });
+
+test("backup requires a valid export timestamp",()=>{
+ const a=createLibraryBackup([item]);
+ a.exported_at="not-a-date";
+ assert.throws(()=>parseLibraryBackup(JSON.stringify(a)));
+ const b=createLibraryBackup([item]);
+ delete b.exported_at;
+ assert.throws(()=>parseLibraryBackup(JSON.stringify(b)));
+});
