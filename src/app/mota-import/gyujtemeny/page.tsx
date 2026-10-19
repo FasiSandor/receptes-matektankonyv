@@ -337,6 +337,8 @@ export default function CollectionPage() {
   }
 
   const backupInspectionSequence = useRef(0);
+  const restoreStopRequested = useRef(false);
+  const [restoreStopping,setRestoreStopping] = useState(false);
 
   async function inspectBackup(file:File) {
     if(restoreBusy)return;
@@ -365,6 +367,8 @@ export default function CollectionPage() {
     if(!confirm("Hozzáadod a mentésből a hiányzó elemeket? A meglévő rekordokat változatlanul hagyjuk. A videófájlok nem állnak vissza."))return;
     backupInspectionSequence.current++;
     setInspectBusy(false);
+    restoreStopRequested.current=false;
+    setRestoreStopping(false);
     setRestoreBusy(true);
     setRestoreProgress(0);
     setRestoreErrors([]);
@@ -374,8 +378,10 @@ export default function CollectionPage() {
     let skipped=0;
     const failed:string[]=[];
     const failedEntries:LibraryBackup["items"]=[];
+    let stopped=false;
     try{
       for(const [index,entry] of restorePreview.items.entries()){
+        if(restoreStopRequested.current){stopped=true;break;}
         try{
           const saved=await restoreLibraryItemIfMissing(entry.result,{favorite:entry.favorite,for_competition:entry.for_competition,status:entry.status,note:entry.note,tags:entry.tags});
           if(saved)added++;
@@ -389,10 +395,11 @@ export default function CollectionPage() {
       setRestoreErrors(failed);
       setRestoreFailedEntries(failedEntries);
       setRestoreSummary({added,skipped,failed:failed.length});
-      if(!failed.length)setRestorePreview(null);
-      setMessage(added+" új elem hozzáadva, "+skipped+" meglévő elem kihagyva, "+failed.length+" hiba."+(failed.length?" Sikertelen: "+failed.slice(0,5).join("; "):""));
+      if(!failed.length&&!stopped)setRestorePreview(null);
+      setMessage((stopped?"Megszakítva. A már hozzáadott elemek megmaradnak. ":"")+added+" új elem hozzáadva, "+skipped+" meglévő elem kihagyva, "+failed.length+" hiba."+(failed.length?" Sikertelen: "+failed.slice(0,5).join("; "):""));
     }finally{
       setRestoreBusy(false);
+      setRestoreStopping(false);
       try{await reload();}catch(error){setMessage("A visszaállítás befejeződött, de a lista frissítése nem sikerült: "+String(error));}
     }
   }
@@ -829,7 +836,7 @@ export default function CollectionPage() {
           <small>Először ellenőrizzük a JSON fájlt. Az adatok csak a jóváhagyásod után kerülnek a gyűjteménybe. A meglévő rekordokat változatlanul hagyjuk; csak a hiányzó elemeket adjuk hozzá.</small>
           <input type="file" disabled={restoreBusy} accept=".json,application/json" aria-label="Gyűjtemény biztonsági mentés kiválasztása" onChange={e=>{const file=e.target.files?.[0];if(file)void inspectBackup(file);e.target.value="";}}/>
           {inspectBusy&&<p role="status">A mentési fájl ellenőrzése és a meglévő receptek összehasonlítása folyamatban…</p>}
-          {restorePreview&&<div><p>{restorePreview.item_count} ellenőrzött elem · {restorePreview.exported_at}</p><p>{restoreExisting} meglévő elem kihagyva, {restorePreview.item_count-restoreExisting} új elem kerülhet be.</p>{restoreBusy&&<p role="status">Visszaállítás: {restoreProgress}/{restorePreview.item_count}</p>}<button type="button" disabled={restoreBusy||inspectBusy} onClick={()=>void restoreBackup()}>{restoreBusy?"Visszaállítás folyamatban…":"Jóváhagyás és visszaállítás"}</button><button type="button" disabled={restoreBusy} onClick={()=>setRestorePreview(null)}>Mégse</button></div>}
+          {restorePreview&&<div><p>{restorePreview.item_count} ellenőrzött elem · {restorePreview.exported_at}</p><p>{restoreExisting} meglévő elem kihagyva, {restorePreview.item_count-restoreExisting} új elem kerülhet be.</p>{restoreBusy&&<p role="status">Visszaállítás: {restoreProgress}/{restorePreview.item_count}{restoreStopping?" · Megszakítás a jelenlegi elem után…":""}</p>}{restoreBusy&&<button type="button" disabled={restoreStopping} onClick={()=>{restoreStopRequested.current=true;setRestoreStopping(true);}}>Visszaállítás megszakítása</button>}<button type="button" disabled={restoreBusy||inspectBusy} onClick={()=>void restoreBackup()}>{restoreBusy?"Visszaállítás folyamatban…":"Jóváhagyás és visszaállítás"}</button><button type="button" disabled={restoreBusy} onClick={()=>setRestorePreview(null)}>Mégse</button></div>}
         </div>
       </section>
 
