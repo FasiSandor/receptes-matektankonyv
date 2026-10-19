@@ -165,14 +165,21 @@ export async function uploadLibraryVideo(itemId: string, blob: Blob): Promise<st
     throw new Error(detail || `Videótárhely hiba (HTTP ${response.status})`);
   }
 
-  const rows = await api(`mota_import_items?id=eq.${encodeURIComponent(itemId)}`, {
-    method: "PATCH",
-    headers: { Prefer: "return=representation" },
-    body: JSON.stringify({ video_path: path, updated_at: new Date().toISOString() }),
-  }) as LibraryItem[];
-
-  if (!rows?.[0]) throw new Error("A videó feltöltődött, de nem sikerült a gyűjteményhez kapcsolni.");
-  return path;
+  try {
+    const rows = await api(`mota_import_items?id=eq.${encodeURIComponent(itemId)}`, {
+      method: "PATCH",
+      headers: { Prefer: "return=representation" },
+      body: JSON.stringify({ video_path: path, updated_at: new Date().toISOString() }),
+    }) as LibraryItem[];
+    if (!Array.isArray(rows) || rows.length !== 1 || rows[0].id !== itemId || rows[0].video_path !== path) {
+      throw new Error("A videó feltöltődött, de nem sikerült a gyűjteményhez kapcsolni.");
+    }
+    return path;
+  } catch (error) {
+    // Best-effort cleanup: do not conceal the original database error.
+    try { await deleteLibraryVideo(path); } catch { /* Report the linking error below. */ }
+    throw error;
+  }
 }
 
 export async function createLibraryVideoUrl(path: string, expiresIn = 3600): Promise<string> {
