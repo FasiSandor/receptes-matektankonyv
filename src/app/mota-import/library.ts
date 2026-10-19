@@ -352,9 +352,10 @@ export async function updateLibraryItem(id: string, patch: Partial<Pick<LibraryI
 }
 
 export async function deleteLibraryItem(id: string, videoPath = "") {
-  if (videoPath) await deleteLibraryVideo(videoPath);
+  // Keep the attached video intact if deleting the library record fails.
   await api(`mota_import_items?id=eq.${encodeURIComponent(id)}`, {
     method: "DELETE",
     headers: { Prefer: "return=minimal" },
   });
+  if (videoPath) await deleteLibraryVideo(videoPath);
 }
