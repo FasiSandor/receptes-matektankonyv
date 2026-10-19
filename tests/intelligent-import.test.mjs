@@ -161,3 +161,8 @@ test("bulk import preflight prevents redundant extraction of existing recipes",(
  assert.match(ui,/Már meglévő linkek kihagyása/);
  assert.match(ui,/A meglévő gyűjtemény ellenőrzése nem sikerült/);
 });
+
+test("bulk preflight canonicalizes equivalent source URL forms",()=>{
+ assert.match(ui,/new URL\(x\.source_url\)\.toString\(\)/);
+ assert.match(ui,/new URL\(x\.trim\(\)\)/);
+});
