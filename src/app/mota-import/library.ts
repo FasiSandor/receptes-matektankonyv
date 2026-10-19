@@ -97,6 +97,7 @@ export function setLibraryKey(value: string) {
 }
 
 export async function hashLibraryKey(key = getLibraryKey()) {
+  if (key.trim().length < 20) throw new Error("Hiányzó vagy érvénytelen gyűjteménykulcs.");
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(key));
   return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, "0")).join("");
 }
@@ -112,6 +113,7 @@ function headers(key: string, extra: Record<string, string> = {}) {
 
 async function api(path: string, init: RequestInit = {}) {
   const key = getLibraryKey();
+  if (key.trim().length < 20) throw new Error("Hiányzó vagy érvénytelen gyűjteménykulcs.");
   const response = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
     ...init,
     headers: {
