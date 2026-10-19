@@ -191,3 +191,5 @@ test("IPv4 allowlist rejects private, reserved and documentation ranges",async()
 });
 
 test("library rejects missing keys before hashing or sending REST requests",()=>{assert.match(library,/export async function hashLibraryKey\(key = getLibraryKey\(\)\) \{\s*if \(key\.trim\(\)\.length < 20\)/);assert.match(library,/async function api\(path: string, init: RequestInit = \{\}\) \{\s*const key = getLibraryKey\(\);\s*if \(key\.trim\(\)\.length < 20\)/);});
+
+test("delete keeps video until the library record deletion succeeds",()=>{const fn=library.slice(library.indexOf("export async function deleteLibraryItem("));assert.ok(fn.indexOf('await api(`mota_import_items?id=eq.')>=0);assert.ok(fn.indexOf("if (videoPath) await deleteLibraryVideo(videoPath)")>fn.indexOf('await api(`mota_import_items?id=eq.'));});
