@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
   createLibraryVideoUrl,
-  saveLibraryResult,
+  restoreLibraryItemIfMissing,
   deleteLibraryItem,
   getLibraryKey,
   LibraryItem,
@@ -345,19 +345,24 @@ export default function CollectionPage() {
 
   async function restoreBackup() {
     if(!restorePreview||restoreBusy)return;
-    if(!confirm("Visszaállítod a mentés "+restorePreview.item_count+" elemét? Azonos forráslink esetén a meglévő rekord frissül. A videófájlok nem állnak vissza."))return;
+    if(!confirm("Hozzáadod a mentésből a hiányzó elemeket? A meglévő rekordokat változatlanul hagyjuk. A videófájlok nem állnak vissza."))return;
     setRestoreBusy(true);
     setRestoreProgress(0);
     let done=0;
+    let added=0;
+    let skipped=0;
     try{
       for(const entry of restorePreview.items){
-        const saved=await saveLibraryResult(entry.result);
-        await updateLibraryItem(saved.id,{favorite:entry.favorite,for_competition:entry.for_competition,status:entry.status,note:entry.note,tags:entry.tags});
+        const saved=await restoreLibraryItemIfMissing(entry.result);
+        if(saved){
+          await updateLibraryItem(saved.id,{favorite:entry.favorite,for_competition:entry.for_competition,status:entry.status,note:entry.note,tags:entry.tags});
+          added++;
+        }else skipped++;
         done++;
         setRestoreProgress(done);
       }
       setRestorePreview(null);
-      setMessage(done+" elem visszaállítva.");
+      setMessage(added+" új elem hozzáadva, "+skipped+" meglévő elem kihagyva.");
       await reload();
     }catch(error){
       setMessage(done+" elem feldolgozva, majd hiba történt: "+(error instanceof Error?error.message:"Ismeretlen hiba.")+" A művelet részben végrehajtódhatott.");
@@ -790,9 +795,9 @@ export default function CollectionPage() {
       <section className={styles.device}>
         <div style={{padding:16,display:"grid",gap:10}}>
           <strong>Biztonsági mentés visszaállítása</strong>
-          <small>Először ellenőrizzük a JSON fájlt. Az adatok csak a jóváhagyásod után kerülnek a gyűjteménybe. A meglévő rekordok azonos forráslink esetén frissülnek.</small>
+          <small>Először ellenőrizzük a JSON fájlt. Az adatok csak a jóváhagyásod után kerülnek a gyűjteménybe. A meglévő rekordokat változatlanul hagyjuk; csak a hiányzó elemeket adjuk hozzá.</small>
           <input type="file" accept=".json,application/json" aria-label="Gyűjtemény biztonsági mentés kiválasztása" onChange={e=>{const file=e.target.files?.[0];if(file)void inspectBackup(file);e.target.value="";}}/>
-          {restorePreview&&<div><p>{restorePreview.item_count} ellenőrzött elem · {restorePreview.exported_at}</p><p>{restoreExisting} meglévő elem frissülhet, {restorePreview.item_count-restoreExisting} új elem kerülhet be.</p>{restoreBusy&&<p role="status">Visszaállítás: {restoreProgress}/{restorePreview.item_count}</p>}<button type="button" disabled={restoreBusy} onClick={()=>void restoreBackup()}>{restoreBusy?"Visszaállítás folyamatban…":"Jóváhagyás és visszaállítás"}</button><button type="button" disabled={restoreBusy} onClick={()=>setRestorePreview(null)}>Mégse</button></div>}
+          {restorePreview&&<div><p>{restorePreview.item_count} ellenőrzött elem · {restorePreview.exported_at}</p><p>{restoreExisting} meglévő elem kihagyva, {restorePreview.item_count-restoreExisting} új elem kerülhet be.</p>{restoreBusy&&<p role="status">Visszaállítás: {restoreProgress}/{restorePreview.item_count}</p>}<button type="button" disabled={restoreBusy} onClick={()=>void restoreBackup()}>{restoreBusy?"Visszaállítás folyamatban…":"Jóváhagyás és visszaállítás"}</button><button type="button" disabled={restoreBusy} onClick={()=>setRestorePreview(null)}>Mégse</button></div>}
         </div>
       </section>
 
