@@ -163,6 +163,6 @@ test("bulk import preflight prevents redundant extraction of existing recipes",(
 });
 
 test("bulk preflight canonicalizes equivalent source URL forms",()=>{
- assert.match(ui,/new URL\(x\.source_url\)\.toString\(\)/);
+ assert.match(ui,/new URL\(x\)\.toString\(\)/);
  assert.match(ui,/new URL\(x\.trim\(\)\)/);
 });
