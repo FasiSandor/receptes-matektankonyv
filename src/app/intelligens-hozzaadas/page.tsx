@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import KnowledgeShell from "@/components/KnowledgeShell";
 import {createBatchDraft,parseBatchDraft,type BatchDraftEntry} from "./batch-draft";
-import { saveLibraryResult, type MotaResult } from "../mota-import/library";
+import { saveLibraryResult, restoreLibraryItemIfMissing, type MotaResult } from "../mota-import/library";
 
 function displayDuration(value:string):string {
  const match=/^P(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)?$/i.exec(value);
@@ -108,13 +108,14 @@ export default function IntelligentAdd() {
         if(batchAbort.current)break;
         try{
           const result:MotaResult={source_url:entry.url,title:entry.title.trim(),platform:"weboldal",hungarian_summary:[entry.description,entry.author?"Szerző: "+entry.author:"",entry.recipeYield?"Adag: "+entry.recipeYield:"",entry.prepTime?"Előkészítési idő: "+entry.prepTime:"",entry.cookTime?"Sütési/főzési idő: "+entry.cookTime:"",entry.calories?"Kalória (forrás szerint): "+entry.calories:""].filter(Boolean).join("\n"),thumbnail_url:entry.image,recipe_group:entry.category|| (entry.kind==="recipe"?"Webes receptek":"Szakmai cikkek"),ingredient_tags:entry.keywords.slice(0,20),ingredients:entry.ingredients.map(x=>({name:x,note:x})),method_steps:entry.steps,content_tags:["weboldal",...(entry.cuisine?[entry.cuisine]:[])]};
-          await saveLibraryResult(result);
+          const inserted=await restoreLibraryItemIfMissing(result);
+          if(!inserted){setBatchResults(old=>old.map(x=>x.url===entry.url?{...x,error:"Ez a forrás már szerepel a gyűjteményben; a meglévő recept változatlan maradt.",errorPhase:"save",selected:false}:x));failedCount++;setBatchProgress(savedCount+failedCount);continue;}
           savedCount++;
           setBatchResults(old=>old.map(x=>x.url===entry.url?{...x,selected:false,saved:true}:x));
         }catch(e){failedCount++;setBatchResults(old=>old.map(x=>x.url===entry.url?{...x,error:e instanceof Error?e.message:"Mentési hiba",errorPhase:"save",selected:true}:x));}
         setBatchProgress(savedCount+failedCount);
       }
-    }finally{setBatchBusy(false);setBatchMode(null);setBatchMessage(savedCount+" mentve, "+failedCount+" sikertelen."+(batchAbort.current?" Megszakítva; a nem mentett elemek kijelölve maradtak.":""));}
+    }finally{setBatchBusy(false);setBatchMode(null);setBatchMessage(savedCount+" új recept mentve, "+failedCount+" kihagyott vagy sikertelen."+(batchAbort.current?" Megszakítva; a nem mentett elemek kijelölve maradtak.":""));}
   }
   const currentUrl=useRef("");
   const requestId=useRef(0);
