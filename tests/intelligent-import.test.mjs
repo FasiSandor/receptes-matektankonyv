@@ -126,3 +126,14 @@ test("failed or unprocessed restore entries can be exported as a validated stand
  assert.match(page,/onClick=\{downloadRemainingBackup\}/);
  assert.match(page,/Hátralévő \{restoreFailedEntries\.length\} recept letöltése JSON-ként/);
 });
+
+test("bulk import retains metadata, supports selective retry and marks saved entries",()=>{
+ assert.match(ui,/type BatchEntry=/);
+ assert.match(ui,/recipeYield:String\(data\.recipeYield/);
+ assert.match(ui,/thumbnail_url:entry\.image/);
+ assert.match(ui,/ingredient_tags:entry\.keywords/);
+ assert.match(ui,/retryOnly\?batchResults\.filter/);
+ assert.match(ui,/saved:true/);
+ assert.match(ui,/Sikertelen linkek újrapróbálása/);
+ assert.match(ui,/Megszakítás/);
+});
