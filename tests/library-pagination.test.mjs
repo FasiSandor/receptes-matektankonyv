@@ -29,3 +29,18 @@ test("library pagination rejects malformed server responses",async()=>{
  vm.runInNewContext(code,sandbox);
  await assert.rejects(()=>sandbox.exports.listLibraryItems(),/Hibás gyűjteményválasz/);
 });
+
+test("restore inserts missing records with ignore-duplicates rather than upsert",async()=>{
+ const calls=[];
+ const sandbox={exports:{},URL,Date,JSON,TextEncoder,Uint8Array,crypto:{getRandomValues(a){a.fill(7);return a;}},localStorage:{getItem(){return "test-library-key-1234567890";}},fetch:async(url,init)=>{
+  calls.push({url,init});
+  return {ok:true,status:201,text:async()=>JSON.stringify([])};
+ }};
+ vm.runInNewContext(code,sandbox);
+ const restored=await sandbox.exports.restoreLibraryItemIfMissing({source_url:"https://example.com/recipe",title:"Test recipe",platform:"web"});
+ assert.equal(restored,null);
+ assert.equal(calls.length,1);
+ assert.match(calls[0].url,/on_conflict=library_key_hash,source_url/);
+ assert.match(calls[0].init.headers.Prefer,/resolution=ignore-duplicates/);
+ assert.doesNotMatch(calls[0].init.headers.Prefer,/merge-duplicates/);
+});
