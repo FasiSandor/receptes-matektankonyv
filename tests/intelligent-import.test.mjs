@@ -31,3 +31,5 @@ test("stale asynchronous import responses cannot overwrite a changed source",()=
 });
 
 test('common Hungarian quantities are stored separately and original text retained',()=>{ assert.match(ui,/kg\|dkg\|g\|mg\|l\|dl\|cl\|ml\|db/); assert.match(ui,/amount:/); assert.match(ui,/note:original/); });
+
+test('ingredient unit list supports cooking measures and abbreviations',()=>{ for(const unit of ['ek','tk','gerezd','fej','szál','szelet','csipet','bögre']) assert.ok(ui.includes('|'+unit),'missing '+unit); });
