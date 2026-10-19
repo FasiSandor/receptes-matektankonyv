@@ -151,3 +151,29 @@ test("video upload: successful link verifies returned item and never deletes sto
  assert.match(path,/123e4567-e89b-42d3-a456-426614174000-/);
  assert.deepEqual(requests.map(x=>x.method),["POST","PATCH"]);
 });
+
+test("deleting a missing recipe never deletes its attached video",async()=>{
+ const requests=[];
+ const fetch=async(url,init={})=>{
+  requests.push({url:String(url),method:init.method});
+  if(init.method==="DELETE")return {ok:true,status:200,text:async()=>JSON.stringify([])};
+  throw Error("Unexpected request "+init.method);
+ };
+ const sandbox={exports:{},URL,Date,JSON,TextEncoder,Uint8Array,crypto:webcrypto,window:{},localStorage:{getItem(){return key;}},fetch,Blob};
+ const lib=load("../src/app/mota-import/library.ts",sandbox);
+ await assert.rejects(lib.deleteLibraryItem("123e4567-e89b-42d3-a456-426614174000","example/video.mp4"),/nem igazolható/);
+ assert.equal(requests.length,1);
+ assert.ok(requests[0].url.includes("/rest/v1/mota_import_items"));
+});
+
+test("metadata update rejects a database response for the wrong recipe",async()=>{
+ const requests=[];
+ const fetch=async(url,init={})=>{
+  requests.push(init.method);
+  return {ok:true,status:200,text:async()=>JSON.stringify([{id:"different-recipe"}])};
+ };
+ const sandbox={exports:{},URL,Date,JSON,TextEncoder,Uint8Array,crypto:webcrypto,window:{},localStorage:{getItem(){return key;}},fetch,Blob};
+ const lib=load("../src/app/mota-import/library.ts",sandbox);
+ await assert.rejects(lib.updateLibraryItem("123e4567-e89b-42d3-a456-426614174000",{favorite:true}),/nem igazolható/);
+ assert.deepEqual(requests,["PATCH"]);
+});
