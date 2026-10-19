@@ -47,9 +47,16 @@ test("collection listing paginates beyond first 500 rows",()=>{assert.match(libr
 
 test("restore UI uses insert-only API, tracks individual failures and disables file input while restoring",()=>{
  const page=readFileSync(new URL("../src/app/mota-import/gyujtemeny/page.tsx",import.meta.url),"utf8");
- assert.match(page,/restoreLibraryItemIfMissing\(entry\.result\)/);
+ assert.match(page,/restoreLibraryItemIfMissing\(entry\.result,/);
  assert.doesNotMatch(page,/saveLibraryResult\(entry\.result\)/);
  assert.match(page,/const failed:string\[\]=\[\]/);
  assert.match(page,/setRestoreProgress\(index\+1\)/);
  assert.match(page,/type="file" disabled=\{restoreBusy\}/);
+});
+
+test("backup export validates its own JSON before offering download",()=>{
+ const page=readFileSync(new URL("../src/app/mota-import/gyujtemeny/page.tsx",import.meta.url),"utf8");
+ assert.match(page,/parseLibraryBackup\(json\)/);
+ assert.match(page,/blob\.size>50_000_000/);
+ assert.doesNotMatch(page,/updateLibraryItem\(saved\.id/);
 });
