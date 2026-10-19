@@ -76,3 +76,12 @@ test("backup inspection ignores stale asynchronous file selections",()=>{
  assert.match(page,/if\(inspection!==backupInspectionSequence\.current\)return/);
  assert.match(page,/backupInspectionSequence\.current\+\+/);
 });
+
+test("backup restore offers explicit retry of failed entries only",()=>{
+ const page=readFileSync(new URL("../src/app/mota-import/gyujtemeny/page.tsx",import.meta.url),"utf8");
+ assert.match(page,/failedEntries\.push\(entry\)/);
+ assert.match(page,/setRestoreFailedEntries\(failedEntries\)/);
+ assert.match(page,/items:restoreFailedEntries,item_count:restoreFailedEntries\.length/);
+ assert.match(page,/sikertelen elem újrapróbálása/);
+ assert.match(page,/Jóváhagyás után indul a visszaállítás/);
+});
