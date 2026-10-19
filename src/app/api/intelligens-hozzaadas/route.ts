@@ -39,6 +39,14 @@ function extract(html:string,url:string){
   const attrs=Object.fromEntries([...tag.matchAll(/([\w:-]+)\s*=\s*(["'])(.*?)\2/g)].map(m=>[m[1].toLowerCase(),m[3]]));
   return ["description","og:description"].includes((attrs.name||attrs.property||"").toLowerCase())?attrs.content||"":"";
  }).find(Boolean)||"";
+ const imageAlt=(v:unknown)=>typeof v==="string"?clean(v):"";
+ const normalizeImage=(candidate:string)=>{
+  try{
+   const u=new URL(candidate,url);
+   if(!["http:","https:"].includes(u.protocol)||u.username||u.password)return "";
+   return u.toString();
+  }catch{return "";}
+ };
  const metaValue=(name:string)=>metaTags.map(tag=>{
   const attrs=Object.fromEntries([...tag.matchAll(/([\\w:-]+)\\s*=\\s*(["'])(.*?)\\2/g)].map(m=>[m[1].toLowerCase(),m[3]]));
   return (attrs.name||attrs.property||"").toLowerCase()===name?attrs.content||"":"";
@@ -51,8 +59,7 @@ function extract(html:string,url:string){
  const imageValue=r?.image;
  const imageRaw=typeof imageValue==="string"?imageValue:Array.isArray(imageValue)?imageValue.find(v=>typeof v==="string")||"":imageValue&&typeof imageValue==="object"?str((imageValue as Record<string,unknown>).url):"";
  const imageCandidate=imageRaw||metaValue("og:image")||metaValue("twitter:image");
- let image="";
- try{const candidate=new URL(imageCandidate,url);if(["http:","https:"].includes(candidate.protocol)&&!candidate.username&&!candidate.password)image=candidate.toString();}catch{/* no image */}
+ const image=normalizeImage(imageCandidate);
  const body=html.replace(/<(script|style|nav|footer|header|aside|form|iframe|noscript|svg)\b[^>]*>[\s\S]*?<\/\1>/gi," ");
  const main=body.match(/<(article|main)\b[^>]*>([\s\S]*?)<\/\1>/i)?.[2]||body;
  const paragraphs=[...main.matchAll(/<(p|h[1-6]|li)\b[^>]*>([\s\S]*?)<\/\1>/gi)].map(m=>clean(m[2])).filter(s=>s.length>=25&&!/^(cookie|privacy|hirdetés|feliratkozás|subscribe)/i.test(s)).slice(0,120);
