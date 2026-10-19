@@ -37,11 +37,11 @@ export default function IntelligentAdd() {
   const [batchProgress,setBatchProgress]=useState(0);
   const [batchMessage,setBatchMessage]=useState("");
   const batchAbort=useRef(false);
-  async function analyzeBatch(){
+  async function analyzeBatch(retryOnly=false){
     if(batchBusy)return;
     const urls=[...new Set(batchUrls.split(/\\r?\\n/).map(x=>x.trim()).filter(Boolean))];
     if(urls.length===0||urls.length>15){setBatchMessage("Adj meg 1–15 különálló forráslinket.");return;}
-    setBatchBusy(true);batchAbort.current=false;setBatchResults([]);setBatchProgress(0);setBatchMessage("");
+    setBatchBusy(true);batchAbort.current=false;if(!retryOnly)setBatchResults([]);setBatchProgress(0);setBatchMessage("");
     const results:BatchEntry[]=[];
     try{
       for(const url of urls){
@@ -52,7 +52,7 @@ export default function IntelligentAdd() {
           if(!response.ok)throw Error(data.error||"A feldolgozás sikertelen.");
           results.push({...emptyBatch(url),title:String(data.title||""),description:String(data.description||""),ingredients:Array.isArray(data.ingredients)?data.ingredients:[],steps:Array.isArray(data.steps)&&data.steps.length?data.steps:Array.isArray(data.paragraphs)?data.paragraphs:[],kind:data.kind==="recipe"?"recipe":"article",selected:true,author:String(data.author||""),recipeYield:String(data.recipeYield||""),prepTime:displayDuration(String(data.prepTime||"")),cookTime:displayDuration(String(data.cookTime||"")),image:String(data.image||""),category:String(data.category||""),cuisine:String(data.cuisine||""),calories:String(data.calories||""),keywords:Array.isArray(data.keywords)?data.keywords:[]});
         }catch(e){results.push({...emptyBatch(url),error:e instanceof Error?e.message:"Hiba"});}
-        setBatchResults([...results]);setBatchProgress(results.length);
+        setBatchResults(old=>retryOnly?old.map(x=>results.find(y=>y.url===x.url)||x):[...results]);setBatchProgress(results.length);
       }
     }finally{setBatchBusy(false);setBatchMessage(batchAbort.current?"A feldolgozás megszakítva. Az elkészült előnézetek megmaradtak.":"Feldolgozás kész. Ellenőrizd a találatokat mentés előtt.");}
   }
@@ -150,7 +150,8 @@ export default function IntelligentAdd() {
       <label htmlFor="batchUrls">Forráslinkek, soronként egy</label>
       <textarea id="batchUrls" style={field} rows={6} value={batchUrls} disabled={batchBusy} onChange={e=>setBatchUrls(e.target.value)} placeholder={"https://pelda.hu/recept-1\\nhttps://pelda.hu/recept-2"}/>
       <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
-        <button className="kh-btn secondary" disabled={batchBusy} onClick={analyzeBatch}>Linkek feldolgozása</button>
+        <button className="kh-btn secondary" disabled={batchBusy} onClick={()=>analyzeBatch()}>Linkek feldolgozása</button>
+        <button className="kh-btn secondary" disabled={batchBusy||!batchResults.some(x=>x.error&&!x.saved)} onClick={()=>analyzeBatch(true)}>Sikertelen linkek újrapróbálása</button>
         <button className="kh-btn" disabled={batchBusy||!batchResults.some(x=>x.selected&&!x.error&&x.title.trim())} onClick={saveBatch}>Kijelöltek mentése</button>
         {batchBusy&&<button className="kh-btn secondary" onClick={()=>{batchAbort.current=true;setBatchMessage("Megszakítás kérve; a folyamatban lévő művelet még befejeződik.");}}>Megszakítás</button>}
       </div>
