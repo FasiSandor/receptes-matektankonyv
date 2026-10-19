@@ -33,3 +33,10 @@ Ne módosítsuk a meglévő Supabase táblákat, kulcsokat és videókat; ne tö
 - A kérés- és hálózati korlátok továbbra is további biztonsági auditot igényelnek; a memóriában tárolt limit nem globális.
 - Még hiányzik: valós külső URL-ekkel ellenőrzött végponttól végpontig import, a Supabase mentés és visszaolvasás igazolása, export/visszaállítás auditja, PDF és közösségi videók külön fejlesztése.
 - Production merge/deploy nincs engedélyezve.
+
+## Biztonsági mentés és visszaállítás
+- A Gyűjtemény JSON exportot és ellenőrzött, külön megerősítendő visszaállítást tartalmaz a fejlesztési ágon.
+- A visszaállítás állapotot és részleges hibát jelez, a duplikált forráslinkeket visszautasítja.
+- A 8452cef commit mindkét GitHub workflow-ja sikeres volt.
+- Korlát: az export jelenleg legfeljebb 500 lekért rekordot tartalmaz, és nem menti a videófájlokat. Supabase élő próba még hátravan.
+- Production deploy nem történt.
