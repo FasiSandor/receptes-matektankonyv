@@ -137,6 +137,7 @@ function encodeStoragePath(path: string) {
 }
 
 export async function uploadLibraryVideo(itemId: string, blob: Blob): Promise<string> {
+  if (blob.size === 0) throw new Error("Üres videófájl nem tölthető fel.");
   if (blob.size > MAX_VIDEO_BYTES) {
     throw new Error("A videó 50 MB-nál nagyobb, ezért a Gyűjteménybe csak az elemzés kerül elmentésre.");
   }
