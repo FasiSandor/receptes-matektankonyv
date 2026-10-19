@@ -108,3 +108,11 @@ test("cancelled backup reports unprocessed items separately from failed items",(
  assert.match(page,/pending:stopped\?failedEntries\.length-failed\.length:0/);
  assert.match(page,/\{restoreSummary\.pending\} feldolgozatlan elem/);
 });
+
+test("restore warns before page unload and prevents switching library key mid-operation",()=>{
+ const page=readFileSync(new URL("../src/app/mota-import/gyujtemeny/page.tsx",import.meta.url),"utf8");
+ assert.match(page,/window\.addEventListener\("beforeunload",warn\)/);
+ assert.match(page,/window\.removeEventListener\("beforeunload",warn\)/);
+ assert.match(page,/if\(restoreBusy\|\|inspectBusy\|\|backupBusy\)/);
+ assert.match(page,/disabled=\{restoreBusy\|\|inspectBusy\|\|backupBusy\} onClick=\{importKey\}/);
+});
