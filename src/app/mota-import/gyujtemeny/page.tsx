@@ -314,7 +314,10 @@ export default function CollectionPage() {
     try {
       const allItems=await listLibraryItems();
       const data=createLibraryBackup(allItems);
-      const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
+      const json=JSON.stringify(data,null,2);
+      parseLibraryBackup(json);
+      const blob=new Blob([json],{type:"application/json"});
+      if(blob.size>50_000_000)throw Error("A biztonsági mentés meghaladja az 50 MB-os visszaállítási korlátot.");
       const href=URL.createObjectURL(blob);
       const a=document.createElement("a");
       a.href=href;
@@ -354,15 +357,9 @@ export default function CollectionPage() {
     try{
       for(const [index,entry] of restorePreview.items.entries()){
         try{
-          const saved=await restoreLibraryItemIfMissing(entry.result);
-          if(saved){
-            try{
-              await updateLibraryItem(saved.id,{favorite:entry.favorite,for_competition:entry.for_competition,status:entry.status,note:entry.note,tags:entry.tags});
-              added++;
-            }catch(error){
-              failed.push(entry.result.title+" (jelölések: "+(error instanceof Error?error.message:"hiba")+")");
-            }
-          }else skipped++;
+          const saved=await restoreLibraryItemIfMissing(entry.result,{favorite:entry.favorite,for_competition:entry.for_competition,status:entry.status,note:entry.note,tags:entry.tags});
+          if(saved)added++;
+          else skipped++;
         }catch(error){
           failed.push(entry.result.title+" ("+(error instanceof Error?error.message:"hiba")+")");
         }
