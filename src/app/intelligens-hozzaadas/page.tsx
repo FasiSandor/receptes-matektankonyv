@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import KnowledgeShell from "@/components/KnowledgeShell";
 import {createBatchDraft,parseBatchDraft,type BatchDraftEntry} from "./batch-draft";
-import { saveLibraryResult, restoreLibraryItemIfMissing, listLibraryItems, type MotaResult } from "../mota-import/library";
+import { saveLibraryResult, restoreLibraryItemIfMissing, listLibrarySourceUrls, type MotaResult } from "../mota-import/library";
 
 function displayDuration(value:string):string {
  const match=/^P(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)?$/i.exec(value);
@@ -90,8 +90,8 @@ export default function IntelligentAdd() {
     let existingUrls=new Set<string>();
     if(!retryOnly&&batchOnlyNew){
       try{
-        const existing=await listLibraryItems();
-        existingUrls=new Set(existing.map(x=>{try{return new URL(x.source_url).toString();}catch{return x.source_url;}}));
+        const existing=await listLibrarySourceUrls();
+        existingUrls=new Set(existing.map(x=>{try{return new URL(x).toString();}catch{return x;}}));
       }catch(e){
         setBatchBusy(false);setBatchMode(null);batchOperation.current=false;
         setBatchMessage("A meglévő gyűjtemény ellenőrzése nem sikerült. A biztonságos szűréshez próbáld újra: "+(e instanceof Error?e.message:"hiba"));
