@@ -147,6 +147,7 @@ export default function CollectionPage() {
   const [restorePreview,setRestorePreview] = useState<LibraryBackup|null>(null);
   const [restoreBusy,setRestoreBusy] = useState(false);
   const [restoreProgress,setRestoreProgress] = useState(0);
+  const [backupBusy,setBackupBusy] = useState(false);
 
   async function reload() {
     try {
@@ -307,6 +308,8 @@ export default function CollectionPage() {
   }
 
   async function downloadBackup() {
+    if(backupBusy)return;
+    setBackupBusy(true);
     try {
       const allItems=await listLibraryItems();
       const data=createLibraryBackup(allItems);
@@ -322,7 +325,7 @@ export default function CollectionPage() {
       setMessage(data.item_count+" elem biztonsági mentése elkészült. A videófájlok nem részei a JSON mentésnek.");
     } catch(error) {
       setMessage(error instanceof Error?error.message:"A mentés nem sikerült.");
-    }
+    }finally{setBackupBusy(false);}
   }
 
   async function inspectBackup(file:File) {
@@ -445,7 +448,7 @@ export default function CollectionPage() {
         </div>
       </section>
 
-      <div style={{padding:"0 16px 12px"}}><button type="button" className={styles.catalogTool} onClick={()=>void downloadBackup()} disabled={loading}>↓ Gyűjtemény biztonsági mentése (JSON)</button></div>
+      <div style={{padding:"0 16px 12px"}}><button type="button" className={styles.catalogTool} onClick={()=>void downloadBackup()} disabled={loading||backupBusy}>{backupBusy?"Mentés előkészítése…":"↓ Gyűjtemény biztonsági mentése (JSON)"}</button></div>
 
       <section className={styles.catalogTools}>
         <button type="button" className={sourceFilter !== "all" ? styles.catalogToolActive : styles.catalogTool} onClick={() => setSourceOpen(true)}>
