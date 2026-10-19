@@ -60,3 +60,11 @@ test("backup export validates its own JSON before offering download",()=>{
  assert.match(page,/blob\.size>50_000_000/);
  assert.doesNotMatch(page,/updateLibraryItem\(saved\.id/);
 });
+
+test("restore results persist in an accessible summary with individual error details",()=>{
+ const page=readFileSync(new URL("../src/app/mota-import/gyujtemeny/page.tsx",import.meta.url),"utf8");
+ assert.match(page,/setRestoreSummary\(\{added,skipped,failed:failed\.length\}\)/);
+ assert.match(page,/setRestoreErrors\(failed\)/);
+ assert.match(page,/aria-label="Visszaállítás eredménye"/);
+ assert.match(page,/<details><summary>Hibás elemek részletei/);
+});
