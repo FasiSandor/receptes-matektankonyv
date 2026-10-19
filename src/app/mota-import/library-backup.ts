@@ -39,13 +39,13 @@ export function createLibraryBackup(items:LibraryItem[]):LibraryBackup {
 }
 
 export function parseLibraryBackup(raw:string):LibraryBackup {
-  if(raw.length>12_000_000)throw Error("A biztonsági mentés túl nagy.");
+  if(raw.length>50_000_000)throw Error("A biztonsági mentés túl nagy.");
   let data:unknown;
   try {data=JSON.parse(raw);}catch{throw Error("Nem érvényes JSON biztonsági mentés.");}
   if(!data||typeof data!=="object")throw Error("Érvénytelen mentési formátum.");
   const obj=data as Partial<LibraryBackup>;
   if(obj.format!==BACKUP_FORMAT||!Array.isArray(obj.items))throw Error("Nem támogatott mentési formátum.");
-  if(obj.items.length>500)throw Error("A mentés legfeljebb 500 elemet tartalmazhat.");
+  if(obj.items.length>10000)throw Error("A mentés legfeljebb 10000 elemet tartalmazhat.");
   const seen=new Set<string>();
   const items=obj.items.map(item=>{
     if(!item||typeof item!=="object"||!item.result||typeof item.result!=="object")throw Error("Hibás gyűjteményelem.");
