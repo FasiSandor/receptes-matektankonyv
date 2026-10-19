@@ -146,6 +146,7 @@ export default function CollectionPage() {
   const [quickUrl, setQuickUrl] = useState("");
   const [restorePreview,setRestorePreview] = useState<LibraryBackup|null>(null);
   const [restoreBusy,setRestoreBusy] = useState(false);
+  const [restoreProgress,setRestoreProgress] = useState(0);
 
   async function reload() {
     try {
@@ -325,6 +326,7 @@ export default function CollectionPage() {
 
   async function inspectBackup(file:File) {
     setRestorePreview(null);
+    setRestoreProgress(0);
     if(file.size>12_000_000){setMessage("A mentés túl nagy.");return;}
     try{
       const parsed=parseLibraryBackup(await file.text());
@@ -337,12 +339,14 @@ export default function CollectionPage() {
     if(!restorePreview||restoreBusy)return;
     if(!confirm("Visszaállítod a mentés "+restorePreview.item_count+" elemét? Azonos forráslink esetén a meglévő rekord frissül. A videófájlok nem állnak vissza."))return;
     setRestoreBusy(true);
+    setRestoreProgress(0);
     let done=0;
     try{
       for(const entry of restorePreview.items){
         const saved=await saveLibraryResult(entry.result);
         await updateLibraryItem(saved.id,{favorite:entry.favorite,for_competition:entry.for_competition,status:entry.status,note:entry.note,tags:entry.tags});
         done++;
+        setRestoreProgress(done);
       }
       setRestorePreview(null);
       setMessage(done+" elem visszaállítva.");
@@ -780,7 +784,7 @@ export default function CollectionPage() {
           <strong>Biztonsági mentés visszaállítása</strong>
           <small>Először ellenőrizzük a JSON fájlt. Az adatok csak a jóváhagyásod után kerülnek a gyűjteménybe. A meglévő rekordok azonos forráslink esetén frissülnek.</small>
           <input type="file" accept=".json,application/json" aria-label="Gyűjtemény biztonsági mentés kiválasztása" onChange={e=>{const file=e.target.files?.[0];if(file)void inspectBackup(file);e.target.value="";}}/>
-          {restorePreview&&<div><p>{restorePreview.item_count} ellenőrzött elem · {restorePreview.exported_at}</p><button type="button" disabled={restoreBusy} onClick={()=>void restoreBackup()}>{restoreBusy?"Visszaállítás folyamatban…":"Jóváhagyás és visszaállítás"}</button><button type="button" disabled={restoreBusy} onClick={()=>setRestorePreview(null)}>Mégse</button></div>}
+          {restorePreview&&<div><p>{restorePreview.item_count} ellenőrzött elem · {restorePreview.exported_at}</p>{restoreBusy&&<p role="status">Visszaállítás: {restoreProgress}/{restorePreview.item_count}</p>}<button type="button" disabled={restoreBusy} onClick={()=>void restoreBackup()}>{restoreBusy?"Visszaállítás folyamatban…":"Jóváhagyás és visszaállítás"}</button><button type="button" disabled={restoreBusy} onClick={()=>setRestorePreview(null)}>Mégse</button></div>}
         </div>
       </section>
 
