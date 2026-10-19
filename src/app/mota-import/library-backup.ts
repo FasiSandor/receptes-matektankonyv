@@ -80,3 +80,26 @@ export function parseLibraryBackup(raw:string):LibraryBackup {
   if(typeof obj.exported_at!=="string"||!Number.isFinite(Date.parse(obj.exported_at)))throw Error("Hiányzó vagy hibás mentési dátum.");
   return obj as LibraryBackup;
 }
+
+/** Partition large collections into individually importable, validated JSON files.
+ * Never silently omit records when a single backup exceeds the import limits.
+ */
+export function createLibraryBackupParts(items:LibraryItem[]):LibraryBackup[] {
+  if(items.length===0)return [createLibraryBackup([])];
+  const parts:LibraryBackup[]=[];
+  function append(group:LibraryItem[]):void {
+    const backup=createLibraryBackup(group);
+    const json=JSON.stringify(backup,null,2);
+    if(new TextEncoder().encode(json).length<=50_000_000){
+      parseLibraryBackup(json);
+      parts.push(backup);
+      return;
+    }
+    if(group.length===1)throw Error("Egyetlen gyűjteményelem meghaladja az 50 MB-os mentési korlátot.");
+    const mid=Math.floor(group.length/2);
+    append(group.slice(0,mid));
+    append(group.slice(mid));
+  }
+  for(let start=0;start<items.length;start+=10000)append(items.slice(start,start+10000));
+  return parts;
+}
