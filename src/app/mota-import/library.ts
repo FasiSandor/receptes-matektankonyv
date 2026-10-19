@@ -362,9 +362,12 @@ export async function updateLibraryItem(id: string, patch: Partial<Pick<LibraryI
 
 export async function deleteLibraryItem(id: string, videoPath = "") {
   // Keep the attached video intact if deleting the library record fails.
-  await api(`mota_import_items?id=eq.${encodeURIComponent(id)}`, {
+  const deleted = await api(`mota_import_items?id=eq.${encodeURIComponent(id)}`, {
     method: "DELETE",
-    headers: { Prefer: "return=minimal" },
-  });
+    headers: { Prefer: "return=representation" },
+  }) as LibraryItem[];
+  if (!Array.isArray(deleted) || deleted.length !== 1 || deleted[0].id !== id) {
+    throw new Error("A recept törlése nem igazolható; a videót változatlanul hagytuk.");
+  }
   if (videoPath) await deleteLibraryVideo(videoPath);
 }
