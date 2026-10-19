@@ -116,3 +116,13 @@ test("restore warns before page unload and prevents switching library key mid-op
  assert.match(page,/if\(restoreBusy\|\|inspectBusy\|\|backupBusy\)/);
  assert.match(page,/disabled=\{restoreBusy\|\|inspectBusy\|\|backupBusy\} onClick=\{importKey\}/);
 });
+
+test("failed or unprocessed restore entries can be exported as a validated standalone backup",()=>{
+ const page=readFileSync(new URL("../src/app/mota-import/gyujtemeny/page.tsx",import.meta.url),"utf8");
+ assert.match(page,/function downloadRemainingBackup\(\)/);
+ assert.match(page,/item_count:restoreFailedEntries\.length/);
+ assert.match(page,/items:restoreFailedEntries/);
+ assert.match(page,/parseLibraryBackup\(json\)/);
+ assert.match(page,/onClick=\{downloadRemainingBackup\}/);
+ assert.match(page,/Hátralévő \{restoreFailedEntries\.length\} recept letöltése JSON-ként/);
+});
