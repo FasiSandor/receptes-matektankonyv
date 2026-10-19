@@ -10,7 +10,7 @@ const end=source.indexOf("async function download(");
 assert.ok(start>=0&&end>start);
 const snippet=source.slice(start,end).replace("export function extract(","function extract(");
 const compiled=ts.transpileModule(snippet+"\nglobalThis.extract=extract;",{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.None}});
-const sandbox={};vm.runInNewContext(compiled.outputText,sandbox);
+const sandbox={URL};vm.runInNewContext(compiled.outputText,sandbox);
 const extract=sandbox.extract;
 
 test("Recipe JSON-LD extracts ingredient quantities and nested HowToSteps",()=>{
