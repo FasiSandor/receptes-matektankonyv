@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import KnowledgeShell from "@/components/KnowledgeShell";
 import { saveLibraryResult, type MotaResult } from "../mota-import/library";
 
@@ -12,24 +12,31 @@ export default function IntelligentAdd() {
   const [error,setError]=useState("");
   const [busy,setBusy]=useState(false);
   const [saved,setSaved]=useState(false);
-  useEffect(()=>{setUrl(new URLSearchParams(window.location.search).get("url")||"")},[]);
+  const currentUrl=useRef("");
+  const requestId=useRef(0);
+  useEffect(()=>{const initial=new URLSearchParams(window.location.search).get("url")||"";currentUrl.current=initial;setUrl(initial)},[]);
   function changeSource(next:string) {
+    currentUrl.current=next;
+    requestId.current+=1;
     setUrl(next);
     setTitle("");setSummary("");setIngredients("");setSteps("");
-    setSaved(false);setError("");
+    setSaved(false);setError("");setBusy(false);
   }
   const field:React.CSSProperties={width:"100%",padding:12,border:"1px solid #334155",borderRadius:10,background:"#111827",color:"#f8fafc",font:"inherit"};
   async function analyze() {
     setError("");setSaved(false);setBusy(true);
+    const id=++requestId.current;
+    const source=url.trim();
     try {
-      const response=await fetch("/api/intelligens-hozzaadas",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({url:url.trim()})});
+      const response=await fetch("/api/intelligens-hozzaadas",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({url:source})});
       const result=await response.json();
+      if(id!==requestId.current||source!==currentUrl.current.trim())return;
       if(!response.ok)throw Error(result.error||"Nem sikerült feldolgozni a weboldalt.");
       setTitle(result.title||"");setSummary(result.description||(result.paragraphs||[]).slice(0,3).join("\n"));
       setIngredients((result.ingredients||[]).join("\n"));
       setSteps((result.steps?.length?result.steps:result.paragraphs||[]).join("\n"));
-    }catch(e){setError(e instanceof Error?e.message:"Feldolgozási hiba. Kézzel is rögzítheted.");}
-    finally{setBusy(false);}
+    }catch(e){if(id===requestId.current)setError(e instanceof Error?e.message:"Feldolgozási hiba. Kézzel is rögzítheted.");}
+    finally{if(id===requestId.current)setBusy(false);}
   }
   async function save() {
     setError("");setSaved(false);
