@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import KnowledgeShell from "@/components/KnowledgeShell";
 import {createBatchDraft,parseBatchDraft,type BatchDraftEntry} from "./batch-draft";
-import { saveLibraryResult, restoreLibraryItemIfMissing, listLibrarySourceUrls, type MotaResult } from "../mota-import/library";
+import { restoreLibraryItemIfMissing, listLibrarySourceUrls, type MotaResult } from "../mota-import/library";
 
 function displayDuration(value:string):string {
  const match=/^P(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)?$/i.exec(value);
@@ -177,7 +177,7 @@ export default function IntelligentAdd() {
     const saveId=requestId.current;
     try {
       const result:MotaResult={source_url:source.toString(),title:title.trim(),platform:"weboldal",hungarian_summary:[summary.trim(),author.trim()?"Szerző: "+author.trim():"",yieldText.trim()?"Adag: "+yieldText.trim():"",prepTime.trim()?"Előkészítési idő: "+prepTime.trim():"",cookTime.trim()?"Sütési/főzési idő: "+cookTime.trim():"",calories.trim()?"Kalória (forrás szerint): "+calories.trim():""].filter(Boolean).join("\n"),thumbnail_url:image.trim(),recipe_group:category.trim()|| (sourceKind==="recipe"?"Webes receptek":sourceKind==="article"?"Szakmai cikkek":ingredients.trim()?"Webes receptek":"Szakmai cikkek"),ingredient_tags:keywords.split(",").map(x=>x.trim()).filter(Boolean).slice(0,20),content_tags:[...new Set(["weboldal",...(cuisine.trim()?[cuisine.trim()]:[])])].slice(0,20),ingredients:ingredients.split("\n").map(line=>{const original=line.trim();const match=original.match(/^([\d]+(?:[.,][\d]+)?|[½¼¾])\s*(kg|dkg|g|mg|l|dl|cl|ml|db|csomag|cs|evőkanál|teáskanál|ek|tk|fej|gerezd|szál|szelet|csipet|pohár|bögre)(?=\s|$)\s*[-–:]?\s*(.*)$/i);return match&&match[3]?{name:match[3].trim(),amount:`${match[1]} ${match[2]}`,note:original}:{name:original,note:original};}).filter(x=>x.name),method_steps:steps.split("\n").map(s=>s.trim()).filter(Boolean)};
-      await saveLibraryResult(result);if(saveId===requestId.current)setSaved(true);
+      const inserted=await restoreLibraryItemIfMissing(result);if(saveId===requestId.current){if(inserted)setSaved(true);else setError("Ez a forrás már szerepel a gyűjteményben. A meglévő receptet nem módosítottuk.");}
     }catch(e){if(saveId===requestId.current)setError(e instanceof Error?e.message:"Nem sikerült a mentés.");}
     finally{if(saveId===requestId.current)setBusy(false);}
   }
