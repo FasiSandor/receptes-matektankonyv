@@ -327,7 +327,7 @@ export default function CollectionPage() {
   async function inspectBackup(file:File) {
     setRestorePreview(null);
     setRestoreProgress(0);
-    if(file.size>12_000_000){setMessage("A mentés túl nagy.");return;}
+    if(file.size>50_000_000){setMessage("A mentés túl nagy.");return;}
     try{
       const parsed=parseLibraryBackup(await file.text());
       setRestorePreview(parsed);
