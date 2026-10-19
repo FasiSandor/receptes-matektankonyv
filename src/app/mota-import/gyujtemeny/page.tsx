@@ -381,7 +381,7 @@ export default function CollectionPage() {
     let stopped=false;
     try{
       for(const [index,entry] of restorePreview.items.entries()){
-        if(restoreStopRequested.current){stopped=true;break;}
+        if(restoreStopRequested.current){stopped=true;failedEntries.push(...restorePreview.items.slice(index));break;}
         try{
           const saved=await restoreLibraryItemIfMissing(entry.result,{favorite:entry.favorite,for_competition:entry.for_competition,status:entry.status,note:entry.note,tags:entry.tags});
           if(saved)added++;
@@ -396,7 +396,7 @@ export default function CollectionPage() {
       setRestoreFailedEntries(failedEntries);
       setRestoreSummary({added,skipped,failed:failed.length});
       if(!failed.length&&!stopped)setRestorePreview(null);
-      setMessage((stopped?"Megszakítva. A már hozzáadott elemek megmaradnak. ":"")+added+" új elem hozzáadva, "+skipped+" meglévő elem kihagyva, "+failed.length+" hiba."+(failed.length?" Sikertelen: "+failed.slice(0,5).join("; "):""));
+      setMessage((stopped?"Megszakítva. A már hozzáadott elemek megmaradnak. A feldolgozatlan elemek újrapróbálhatók. ":"")+added+" új elem hozzáadva, "+skipped+" meglévő elem kihagyva, "+failed.length+" hiba."+(failed.length?" Sikertelen: "+failed.slice(0,5).join("; "):""));
     }finally{
       setRestoreBusy(false);
       setRestoreStopping(false);
@@ -826,7 +826,7 @@ export default function CollectionPage() {
         </div>
       ) : null}
 
-      {restoreFailedEntries.length>0&&!restoreBusy&&<button type="button" onClick={()=>{setRestorePreview(previous=>previous?{...previous,items:restoreFailedEntries,item_count:restoreFailedEntries.length}:null);setRestoreExisting(0);setRestoreFailedEntries([]);setRestoreErrors([]);setRestoreSummary(null);setMessage("A sikertelen elemek újrapróbálásra előkészítve. Jóváhagyás után indul a visszaállítás.");}}>Csak a {restoreFailedEntries.length} sikertelen elem újrapróbálása</button>}
+      {restoreFailedEntries.length>0&&!restoreBusy&&<button type="button" onClick={()=>{setRestorePreview(previous=>previous?{...previous,items:restoreFailedEntries,item_count:restoreFailedEntries.length}:null);setRestoreExisting(0);setRestoreFailedEntries([]);setRestoreErrors([]);setRestoreSummary(null);setMessage("A sikertelen elemek újrapróbálásra előkészítve. Jóváhagyás után indul a visszaállítás.");}}>A {restoreFailedEntries.length} sikertelen vagy feldolgozatlan elem folytatása</button>}
 
       {restoreSummary&&<section aria-label="Visszaállítás eredménye"><p role="status">Visszaállítás eredménye: {restoreSummary.added} új, {restoreSummary.skipped} kihagyott, {restoreSummary.failed} hibás elem.</p>{restoreErrors.length>0&&<details><summary>Hibás elemek részletei ({restoreErrors.length})</summary><ul>{restoreErrors.map((error,index)=><li key={index}>{error}</li>)}</ul></details>}</section>}
 
