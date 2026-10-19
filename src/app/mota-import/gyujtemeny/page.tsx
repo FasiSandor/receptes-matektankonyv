@@ -149,6 +149,8 @@ export default function CollectionPage() {
   const [restoreProgress,setRestoreProgress] = useState(0);
   const [backupBusy,setBackupBusy] = useState(false);
   const [restoreExisting,setRestoreExisting] = useState(0);
+  const [restoreErrors,setRestoreErrors] = useState<string[]>([]);
+  const [restoreSummary,setRestoreSummary] = useState<{added:number;skipped:number;failed:number}|null>(null);
 
   async function reload() {
     try {
@@ -335,6 +337,8 @@ export default function CollectionPage() {
   async function inspectBackup(file:File) {
     setRestorePreview(null);
     setRestoreProgress(0);
+    setRestoreErrors([]);
+    setRestoreSummary(null);
     if(file.size>50_000_000){setMessage("A mentés túl nagy.");return;}
     try{
       const parsed=parseLibraryBackup(await file.text());
@@ -351,6 +355,8 @@ export default function CollectionPage() {
     if(!confirm("Hozzáadod a mentésből a hiányzó elemeket? A meglévő rekordokat változatlanul hagyjuk. A videófájlok nem állnak vissza."))return;
     setRestoreBusy(true);
     setRestoreProgress(0);
+    setRestoreErrors([]);
+    setRestoreSummary(null);
     let added=0;
     let skipped=0;
     const failed:string[]=[];
@@ -365,11 +371,13 @@ export default function CollectionPage() {
         }
         setRestoreProgress(index+1);
       }
+      setRestoreErrors(failed);
+      setRestoreSummary({added,skipped,failed:failed.length});
       if(!failed.length)setRestorePreview(null);
       setMessage(added+" új elem hozzáadva, "+skipped+" meglévő elem kihagyva, "+failed.length+" hiba."+(failed.length?" Sikertelen: "+failed.slice(0,5).join("; "):""));
     }finally{
       setRestoreBusy(false);
-      await reload();
+      try{await reload();}catch(error){setMessage("A visszaállítás befejeződött, de a lista frissítése nem sikerült: "+String(error));}
     }
   }
 
@@ -794,6 +802,8 @@ export default function CollectionPage() {
           </section>
         </div>
       ) : null}
+
+      {restoreSummary&&<section aria-label="Visszaállítás eredménye"><p role="status">Visszaállítás eredménye: {restoreSummary.added} új, {restoreSummary.skipped} kihagyott, {restoreSummary.failed} hibás elem.</p>{restoreErrors.length>0&&<details><summary>Hibás elemek részletei ({restoreErrors.length})</summary><ul>{restoreErrors.map((error,index)=><li key={index}>{error}</li>)}</ul></details>}</section>}
 
       <section className={styles.device}>
         <div style={{padding:16,display:"grid",gap:10}}>
