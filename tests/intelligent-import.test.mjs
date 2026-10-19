@@ -172,3 +172,5 @@ test("single URL import preserves previously saved library entries",()=>{
  assert.match(ui,/A meglévő receptet nem módosítottuk/);
  assert.doesNotMatch(ui,/await saveLibraryResult\(result\)/);
 });
+
+test("untrusted forwarding headers cannot create fresh rate limit identities",()=>{assert.doesNotMatch(api,/req\.headers\.get\("x-forwarded-for"\)/);assert.match(api,/const key="shared"/);});
