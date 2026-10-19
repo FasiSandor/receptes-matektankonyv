@@ -1081,3 +1081,5 @@
   .catalogTools{grid-template-columns:1fr}
   .sourceGrid,.facetGrid{grid-template-columns:1fr}
 }
+
+@media(max-width:680px){.hero h1{font-size:42px}.groupRail{position:static;transform:none;flex-direction:row;flex-wrap:wrap}.groupRail button{width:36px;height:34px}.floatingStack{bottom:100px}}
