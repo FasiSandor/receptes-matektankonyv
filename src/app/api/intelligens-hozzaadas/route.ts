@@ -48,7 +48,7 @@ function extract(html:string,url:string){
   }catch{return "";}
  };
  const metaValue=(name:string)=>metaTags.map(tag=>{
-  const attrs=Object.fromEntries([...tag.matchAll(/([\\w:-]+)\\s*=\\s*(["'])(.*?)\\2/g)].map(m=>[m[1].toLowerCase(),m[3]]));
+  const attrs=Object.fromEntries([...tag.matchAll(/([\w:-]+)\s*=\s*(["'])(.*?)\2/g)].map(m=>[m[1].toLowerCase(),m[3]]));
   return (attrs.name||attrs.property||"").toLowerCase()===name?attrs.content||"":"";
  }).find(Boolean)||"";
  const authorValue=r?.author;
