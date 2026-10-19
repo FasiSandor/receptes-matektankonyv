@@ -115,3 +115,5 @@ test("empty backup remains a valid single JSON part",()=>{
  assert.equal(parts.length,1);
  assert.equal(parts[0].item_count,0);
 });
+
+test("backup parts reject duplicate URLs even across the 10000-item boundary",()=>{const rows=Array.from({length:10001},(_,i)=>({...item,source_url:"https://example.com/recipe/"+i}));rows[10000].source_url=rows[0].source_url;assert.throws(()=>createLibraryBackupParts(rows),/forráslinket többször/);});
