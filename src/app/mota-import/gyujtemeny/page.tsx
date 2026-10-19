@@ -152,7 +152,7 @@ export default function CollectionPage() {
   const [restoreExisting,setRestoreExisting] = useState(0);
   const [restoreErrors,setRestoreErrors] = useState<string[]>([]);
   const [restoreFailedEntries,setRestoreFailedEntries] = useState<LibraryBackup["items"]>([]);
-  const [restoreSummary,setRestoreSummary] = useState<{added:number;skipped:number;failed:number}|null>(null);
+  const [restoreSummary,setRestoreSummary] = useState<{added:number;skipped:number;failed:number;pending:number}|null>(null);
 
   async function reload() {
     try {
@@ -394,7 +394,7 @@ export default function CollectionPage() {
       }
       setRestoreErrors(failed);
       setRestoreFailedEntries(failedEntries);
-      setRestoreSummary({added,skipped,failed:failed.length});
+      setRestoreSummary({added,skipped,failed:failed.length,pending:stopped?failedEntries.length-failed.length:0});
       if(!failed.length&&!stopped)setRestorePreview(null);
       setMessage((stopped?"Megszakítva. A már hozzáadott elemek megmaradnak. A feldolgozatlan elemek újrapróbálhatók. ":"")+added+" új elem hozzáadva, "+skipped+" meglévő elem kihagyva, "+failed.length+" hiba."+(failed.length?" Sikertelen: "+failed.slice(0,5).join("; "):""));
     }finally{
@@ -828,7 +828,7 @@ export default function CollectionPage() {
 
       {restoreFailedEntries.length>0&&!restoreBusy&&<button type="button" onClick={()=>{setRestorePreview(previous=>previous?{...previous,items:restoreFailedEntries,item_count:restoreFailedEntries.length}:null);setRestoreExisting(0);setRestoreFailedEntries([]);setRestoreErrors([]);setRestoreSummary(null);setMessage("A sikertelen elemek újrapróbálásra előkészítve. Jóváhagyás után indul a visszaállítás.");}}>A {restoreFailedEntries.length} sikertelen vagy feldolgozatlan elem folytatása</button>}
 
-      {restoreSummary&&<section aria-label="Visszaállítás eredménye"><p role="status">Visszaállítás eredménye: {restoreSummary.added} új, {restoreSummary.skipped} kihagyott, {restoreSummary.failed} hibás elem.</p>{restoreErrors.length>0&&<details><summary>Hibás elemek részletei ({restoreErrors.length})</summary><ul>{restoreErrors.map((error,index)=><li key={index}>{error}</li>)}</ul></details>}</section>}
+      {restoreSummary&&<section aria-label="Visszaállítás eredménye"><p role="status">Visszaállítás eredménye: {restoreSummary.added} új, {restoreSummary.skipped} kihagyott, {restoreSummary.failed} hibás, {restoreSummary.pending} feldolgozatlan elem.</p>{restoreErrors.length>0&&<details><summary>Hibás elemek részletei ({restoreErrors.length})</summary><ul>{restoreErrors.map((error,index)=><li key={index}>{error}</li>)}</ul></details>}</section>}
 
       <section className={styles.device}>
         <div style={{padding:16,display:"grid",gap:10}}>
