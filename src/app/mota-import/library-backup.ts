@@ -46,6 +46,7 @@ export function parseLibraryBackup(raw:string):LibraryBackup {
   const obj=data as Partial<LibraryBackup>;
   if(obj.format!==BACKUP_FORMAT||!Array.isArray(obj.items))throw Error("Nem támogatott mentési formátum.");
   if(obj.items.length>500)throw Error("A mentés legfeljebb 500 elemet tartalmazhat.");
+  const seen=new Set<string>();
   const items=obj.items.map(item=>{
     if(!item||typeof item!=="object"||!item.result||typeof item.result!=="object")throw Error("Hibás gyűjteményelem.");
     const url=typeof item.source_url==="string"?item.source_url:"";
@@ -53,6 +54,8 @@ export function parseLibraryBackup(raw:string):LibraryBackup {
     try{parsed=new URL(url);}catch{throw Error("Hibás forráslink a mentésben.");}
     if(!["https:","http:"].includes(parsed.protocol)||parsed.username||parsed.password)throw Error("Nem támogatott forráslink a mentésben.");
     if(item.result.source_url!==url||typeof item.result.title!=="string"||!item.result.title.trim())throw Error("Hiányzó vagy eltérő receptadat a mentésben.");
+    if(seen.has(url))throw Error("A mentés ugyanazt a forráslinket többször tartalmazza.");
+    seen.add(url);
     if(!["saved","to_try","tested"].includes(item.status))throw Error("Ismeretlen mentési állapot.");
     if(typeof item.favorite!=="boolean"||typeof item.for_competition!=="boolean")throw Error("Hibás kedvenc vagy versenyjelölés.");
     if(typeof item.note!=="string"||item.note.length>100000)throw Error("Hibás megjegyzés.");
