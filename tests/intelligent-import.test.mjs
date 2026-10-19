@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 const api=readFileSync(new URL("../src/app/api/intelligens-hozzaadas/route.ts",import.meta.url),"utf8");
 const ui=readFileSync(new URL("../src/app/intelligens-hozzaadas/page.tsx",import.meta.url),"utf8");
+const library=readFileSync(new URL("../src/app/mota-import/library.ts",import.meta.url),"utf8");
 const home=readFileSync(new URL("../src/app/page.tsx",import.meta.url),"utf8");
 test("server-side route uses pinned IP transport",()=>{assert.match(api,/lookup:/);assert.match(api,/dns\.lookup/);assert.match(api,/new Agent/);});
 test("redirects are validated",()=>{assert.match(api,/new URL\(location,u\)/);assert.match(api,/validate\(current\)/);});
@@ -41,3 +42,5 @@ test('common fraction characters are recognized as ingredient quantities',()=>{ 
 test('accented Hungarian unit names do not depend on ASCII word boundaries',()=>{ assert.ok(ui.includes('(?=\\s|$)')); assert.ok(ui.includes('evőkanál')); assert.ok(ui.includes('bögre')); });
 
 test('ingredient amount separator supports dash and colon',()=>{ assert.ok(ui.includes('[-–:]?')); });
+
+test("collection listing paginates beyond first 500 rows",()=>{assert.match(library,/offset=\"\+offset/);assert.match(library,/page\.length<PAGE_SIZE/);});
