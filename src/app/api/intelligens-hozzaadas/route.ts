@@ -27,7 +27,7 @@ function decode(s:string) {return s.replace(/&#(x[0-9a-f]+|\d+);/gi,(_m,v:string
 function clean(s:string){return decode(s.replace(/<[^>]+>/g," ")).replace(/\s+/g," ").trim();}
 function extract(html:string,url:string){
  let recipe:Record<string,unknown>|null=null;
- function walk(v:unknown):void{if(!v||typeof v!=="object")return;if(Array.isArray(v)){v.forEach(walk);return;}const o=v as Record<string,unknown>;const t=o["@type"];if((typeof t==="string"&&t.toLowerCase()==="recipe")||(Array.isArray(t)&&t.includes("Recipe"))){recipe=o;return;}walk(o["@graph"]);walk(o.mainEntity);walk(o.itemListElement);}
+ function walk(v:unknown):void{if(!v||typeof v!=="object")return;if(Array.isArray(v)){v.forEach(walk);return;}const o=v as Record<string,unknown>;const t=o["@type"];if((typeof t==="string"&&/(?:^|[/#])recipe$/i.test(t))||(Array.isArray(t)&&t.some(x=>typeof x==="string"&&/(?:^|[/#])recipe$/i.test(x)))){recipe=o;return;}walk(o["@graph"]);walk(o.mainEntity);walk(o.itemListElement);}
  for(const m of html.matchAll(/<script\b(?=[^>]*type\s*=\s*["']application\/ld\+json["'])[^>]*>([\s\S]*?)<\/script>/gi)){try{walk(JSON.parse(m[1]));if(recipe)break;}catch{/* skip invalid JSON-LD */}}
  const r=recipe as Record<string,unknown>|null;
  const str=(v:unknown)=>typeof v==="string"?clean(v):"";
@@ -56,8 +56,25 @@ function extract(html:string,url:string){
  const yieldValue=r?.recipeYield;
  const yieldText=Array.isArray(yieldValue)?yieldValue.map(str).filter(Boolean).join(", "):typeof yieldValue==="number"?String(yieldValue):str(yieldValue);
  const time=(v:unknown)=>typeof v==="string"&&/^P(?=\d|T\d)(?:\d+D)?(?:T(?:\d+H)?(?:\d+M)?(?:\d+S)?)?$/i.test(v)?v:"";
+
+ const ldImage=(v:unknown):string=>{
+  if(typeof v==="string")return v;
+  if(Array.isArray(v))return v.map(ldImage).find(Boolean)||"";
+  if(v&&typeof v==="object"){
+   const o=v as Record<string,unknown>;
+   return ldImage(o.url)||ldImage(o.contentUrl);
+  }
+  return "";
+ };
+ const ldSteps=(v:unknown):string[]=>{
+  if(Array.isArray(v))return v.flatMap(ldSteps);
+  if(typeof v==="string")return [clean(v)].filter(Boolean);
+  if(!v||typeof v!=="object")return [];
+  const o=v as Record<string,unknown>;
+  return ldSteps(o.itemListElement??o.item??o.text??o.name);
+ };
  const imageValue=r?.image;
- const imageRaw=typeof imageValue==="string"?imageValue:Array.isArray(imageValue)?imageValue.find(v=>typeof v==="string")||"":imageValue&&typeof imageValue==="object"?str((imageValue as Record<string,unknown>).url):"";
+ const imageRaw=ldImage(imageValue);
  const imageCandidate=imageRaw||metaValue("og:image")||metaValue("twitter:image");
  const image=normalizeImage(imageCandidate);
  const keywords=Array.isArray(r?.keywords)?r.keywords.filter((v):v is string=>typeof v==="string").map(clean):typeof r?.keywords==="string"?r.keywords.split(",").map(clean):[];
@@ -68,7 +85,7 @@ function extract(html:string,url:string){
  const body=html.replace(/<(script|style|nav|footer|header|aside|form|iframe|noscript|svg)\b[^>]*>[\s\S]*?<\/\1>/gi," ");
  const main=body.match(/<(article|main)\b[^>]*>([\s\S]*?)<\/\1>/i)?.[2]||body;
  const paragraphs=[...main.matchAll(/<(p|h[1-6]|li)\b[^>]*>([\s\S]*?)<\/\1>/gi)].map(m=>clean(m[2])).filter(s=>s.length>=25&&!/^(cookie|privacy|hirdetés|feliratkozás|subscribe)/i.test(s)).slice(0,120);
- return {kind:recipe?"recipe":"article",source_url:url,title:title.slice(0,300),description:str(r?.description)||clean(metaDescription),author,recipeYield:yieldText,prepTime:time(r?.prepTime),cookTime:time(r?.cookTime),totalTime:time(r?.totalTime),image,category,cuisine,keywords:keywords.filter(Boolean).slice(0,20),calories,ingredients:Array.isArray(r?.recipeIngredient)?r.recipeIngredient.map(ingredient).filter(Boolean):[],steps:steps(r?.recipeInstructions),paragraphs};
+ return {kind:recipe?"recipe":"article",source_url:url,title:title.slice(0,300),description:str(r?.description)||clean(metaDescription),author,recipeYield:yieldText,prepTime:time(r?.prepTime),cookTime:time(r?.cookTime),totalTime:time(r?.totalTime),image,category,cuisine,keywords:keywords.filter(Boolean).slice(0,20),calories,ingredients:Array.isArray(r?.recipeIngredient)?r.recipeIngredient.map(ingredient).filter(Boolean):[],steps:ldSteps(r?.recipeInstructions),paragraphs};
 }
 async function download(raw:string){
  let current=raw;
