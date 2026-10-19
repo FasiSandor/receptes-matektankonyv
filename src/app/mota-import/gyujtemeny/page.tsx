@@ -348,26 +348,32 @@ export default function CollectionPage() {
     if(!confirm("Hozzáadod a mentésből a hiányzó elemeket? A meglévő rekordokat változatlanul hagyjuk. A videófájlok nem állnak vissza."))return;
     setRestoreBusy(true);
     setRestoreProgress(0);
-    let done=0;
     let added=0;
     let skipped=0;
+    const failed:string[]=[];
     try{
-      for(const entry of restorePreview.items){
-        const saved=await restoreLibraryItemIfMissing(entry.result);
-        if(saved){
-          await updateLibraryItem(saved.id,{favorite:entry.favorite,for_competition:entry.for_competition,status:entry.status,note:entry.note,tags:entry.tags});
-          added++;
-        }else skipped++;
-        done++;
-        setRestoreProgress(done);
+      for(const [index,entry] of restorePreview.items.entries()){
+        try{
+          const saved=await restoreLibraryItemIfMissing(entry.result);
+          if(saved){
+            try{
+              await updateLibraryItem(saved.id,{favorite:entry.favorite,for_competition:entry.for_competition,status:entry.status,note:entry.note,tags:entry.tags});
+              added++;
+            }catch(error){
+              failed.push(entry.result.title+" (jelölések: "+(error instanceof Error?error.message:"hiba")+")");
+            }
+          }else skipped++;
+        }catch(error){
+          failed.push(entry.result.title+" ("+(error instanceof Error?error.message:"hiba")+")");
+        }
+        setRestoreProgress(index+1);
       }
-      setRestorePreview(null);
-      setMessage(added+" új elem hozzáadva, "+skipped+" meglévő elem kihagyva.");
+      if(!failed.length)setRestorePreview(null);
+      setMessage(added+" új elem hozzáadva, "+skipped+" meglévő elem kihagyva, "+failed.length+" hiba."+(failed.length?" Sikertelen: "+failed.slice(0,5).join("; "):""));
+    }finally{
+      setRestoreBusy(false);
       await reload();
-    }catch(error){
-      setMessage(done+" elem feldolgozva, majd hiba történt: "+(error instanceof Error?error.message:"Ismeretlen hiba.")+" A művelet részben végrehajtódhatott.");
-      await reload();
-    }finally{setRestoreBusy(false);}
+    }
   }
 
   async function copyKey() {
@@ -796,7 +802,7 @@ export default function CollectionPage() {
         <div style={{padding:16,display:"grid",gap:10}}>
           <strong>Biztonsági mentés visszaállítása</strong>
           <small>Először ellenőrizzük a JSON fájlt. Az adatok csak a jóváhagyásod után kerülnek a gyűjteménybe. A meglévő rekordokat változatlanul hagyjuk; csak a hiányzó elemeket adjuk hozzá.</small>
-          <input type="file" accept=".json,application/json" aria-label="Gyűjtemény biztonsági mentés kiválasztása" onChange={e=>{const file=e.target.files?.[0];if(file)void inspectBackup(file);e.target.value="";}}/>
+          <input type="file" disabled={restoreBusy} accept=".json,application/json" aria-label="Gyűjtemény biztonsági mentés kiválasztása" onChange={e=>{const file=e.target.files?.[0];if(file)void inspectBackup(file);e.target.value="";}}/>
           {restorePreview&&<div><p>{restorePreview.item_count} ellenőrzött elem · {restorePreview.exported_at}</p><p>{restoreExisting} meglévő elem kihagyva, {restorePreview.item_count-restoreExisting} új elem kerülhet be.</p>{restoreBusy&&<p role="status">Visszaállítás: {restoreProgress}/{restorePreview.item_count}</p>}<button type="button" disabled={restoreBusy} onClick={()=>void restoreBackup()}>{restoreBusy?"Visszaállítás folyamatban…":"Jóváhagyás és visszaállítás"}</button><button type="button" disabled={restoreBusy} onClick={()=>setRestorePreview(null)}>Mégse</button></div>}
         </div>
       </section>
