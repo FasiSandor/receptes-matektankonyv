@@ -39,6 +39,12 @@ export default function IntelligentAdd() {
   const [batchMessage,setBatchMessage]=useState("");
   const [batchMode,setBatchMode]=useState<"analyze"|"save"|null>(null);
   const batchAbort=useRef(false);
+  useEffect(()=>{
+    if(!batchBusy)return;
+    const warn=(event:BeforeUnloadEvent)=>{event.preventDefault();event.returnValue="";};
+    window.addEventListener("beforeunload",warn);
+    return ()=>window.removeEventListener("beforeunload",warn);
+  },[batchBusy]);
   const draftFile=useRef<HTMLInputElement>(null);
   function exportDraft(){
     if(batchBusy||!batchResults.length)return;
