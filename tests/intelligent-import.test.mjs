@@ -82,7 +82,7 @@ test("backup restore offers explicit retry of failed entries only",()=>{
  assert.match(page,/failedEntries\.push\(entry\)/);
  assert.match(page,/setRestoreFailedEntries\(failedEntries\)/);
  assert.match(page,/items:restoreFailedEntries,item_count:restoreFailedEntries\.length/);
- assert.match(page,/sikertelen elem újrapróbálása/);
+ assert.match(page,/sikertelen vagy feldolgozatlan elem folytatása/);
  assert.match(page,/Jóváhagyás után indul a visszaállítás/);
 });
 
