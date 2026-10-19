@@ -141,6 +141,9 @@ export async function uploadLibraryVideo(itemId: string, blob: Blob): Promise<st
     throw new Error("A videó 50 MB-nál nagyobb, ezért a Gyűjteménybe csak az elemzés kerül elmentésre.");
   }
 
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(itemId)) {
+    throw new Error("Érvénytelen receptazonosító a videófeltöltéshez.");
+  }
   const key = getLibraryKey();
   const keyHash = await hashLibraryKey(key);
   const ext = blob.type === "video/quicktime" ? "mov" : blob.type === "video/webm" ? "webm" : "mp4";
