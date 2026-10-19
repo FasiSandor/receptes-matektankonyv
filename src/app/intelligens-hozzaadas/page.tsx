@@ -57,7 +57,7 @@ export default function IntelligentAdd() {
   },[draftDirty,batchBusy]);
   const draftFile=useRef<HTMLInputElement>(null);
   function exportDraft(){
-    if(batchBusy||!batchResults.length)return;
+    if(batchOperation.current||batchBusy||!batchResults.length)return;
     try{
       const json=createBatchDraft(batchResults);
       const objectUrl=URL.createObjectURL(new Blob([json],{type:"application/json"}));
@@ -69,7 +69,7 @@ export default function IntelligentAdd() {
     }catch(e){setBatchMessage(e instanceof Error?e.message:"Nem sikerült a munkamenet exportálása.");}
   }
   async function importDraft(file:File|undefined){
-    if(!file||batchBusy)return;
+    if(!file||batchOperation.current||batchBusy)return;
     if(file.size>1_000_000){setBatchMessage("A munkamenet legfeljebb 1 MB lehet.");return;}
     try{
       const parsed=parseBatchDraft(await file.text());
