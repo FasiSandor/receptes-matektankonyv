@@ -13,6 +13,7 @@ import {
   updateLibraryItem,
 } from "../library";
 import styles from "./Collection.module.css";
+import { createLibraryBackup } from "../library-backup";
 
 type Filter = "all" | "favorite" | "competition" | "to_try" | "tested";
 
@@ -301,6 +302,24 @@ export default function CollectionPage() {
     }
   }
 
+  function downloadBackup() {
+    try {
+      const data=createLibraryBackup(items);
+      const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
+      const href=URL.createObjectURL(blob);
+      const a=document.createElement("a");
+      a.href=href;
+      a.download="tudaskonyvtar-gyujtemeny-"+new Date().toISOString().slice(0,10)+".json";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(()=>URL.revokeObjectURL(href),1000);
+      setMessage(data.item_count+" elem biztonsági mentése elkészült. A videófájlok nem részei a JSON mentésnek.");
+    } catch(error) {
+      setMessage(error instanceof Error?error.message:"A mentés nem sikerült.");
+    }
+  }
+
   async function copyKey() {
     const key = getLibraryKey();
     await navigator.clipboard.writeText(key);
@@ -387,6 +406,8 @@ export default function CollectionPage() {
           ))}
         </div>
       </section>
+
+      <div style={{padding:"0 16px 12px"}}><button type="button" className={styles.catalogTool} onClick={downloadBackup} disabled={loading}>↓ Gyűjtemény biztonsági mentése (JSON)</button></div>
 
       <section className={styles.catalogTools}>
         <button type="button" className={sourceFilter !== "all" ? styles.catalogToolActive : styles.catalogTool} onClick={() => setSourceOpen(true)}>
