@@ -17,3 +17,9 @@ test("changing source clears stale recipe data",()=>{
  for(const field of ["Title","Summary","Ingredients","Steps"])assert.ok(ui.includes("set"+field+'("");'));
  assert.match(ui,/onChange=\{e=>changeSource\(e.target.value\)\}/);
 });
+
+test("structured recipe ingredients and instruction lists are handled",()=>{
+ assert.match(api,/recipeIngredient\.map\(ingredient\)/);
+ assert.match(api,/walk\(o\.itemListElement\)/);
+ assert.match(api,/const ingredient=/);
+});
