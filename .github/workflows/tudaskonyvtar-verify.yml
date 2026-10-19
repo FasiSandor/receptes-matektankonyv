@@ -36,3 +36,6 @@ jobs:
 
       - name: Library backup validation tests
         run: node --test tests/library-backup.test.mjs
+
+      - name: Library pagination behavior tests
+        run: node --test tests/library-pagination.test.mjs
