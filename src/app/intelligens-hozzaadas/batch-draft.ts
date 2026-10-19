@@ -2,7 +2,7 @@ export type BatchDraftEntry = {
  url:string;title:string;description:string;ingredients:string[];steps:string[];kind:string;
  error?:string;selected:boolean;author:string;recipeYield:string;prepTime:string;cookTime:string;
  image:string;category:string;cuisine:string;calories:string;keywords:string[];saved:boolean;
- errorPhase?:"analyze"|"save";
+ errorPhase?:"analyze"|"save"|"duplicate";
 };
 export const BATCH_DRAFT_FORMAT="tudaskonyvtar-batch-draft-v1";
 const MAX_ITEMS=15;
@@ -36,7 +36,7 @@ export function parseBatchDraft(text:string):BatchDraftEntry[]{
   if(!ingredients||!steps||!keywords||typeof raw.selected!=="boolean"||typeof raw.saved!=="boolean")throw Error("Hibás lista vagy állapot a munkamenetben.");
   const error=raw.error===undefined?undefined:field(raw.error,2000);
   const errorPhase=raw.errorPhase===undefined?undefined:raw.errorPhase;
-  if(errorPhase!==undefined&&errorPhase!=="analyze"&&errorPhase!=="save")throw Error("Hibás hibatípus.");
+  if(errorPhase!==undefined&&errorPhase!=="analyze"&&errorPhase!=="save"&&errorPhase!=="duplicate")throw Error("Hibás hibatípus.");
   return {url,title:field(raw.title,5000),description:field(raw.description,20000),ingredients,steps,
    kind:field(raw.kind,40),selected:raw.selected,author:field(raw.author,1000),
    recipeYield:field(raw.recipeYield,500),prepTime:field(raw.prepTime,200),
