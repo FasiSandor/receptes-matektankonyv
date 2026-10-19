@@ -270,6 +270,43 @@ export async function saveLibraryResult(result: MotaResult): Promise<LibraryItem
   return rows[0];
 }
 
+/** Restore only new records. The database unique key prevents replacing an existing item. */
+export async function restoreLibraryItemIfMissing(result:MotaResult):Promise<LibraryItem|null> {
+  const keyHash=await hashLibraryKey(getLibraryKey());
+  const rows=await api("mota_import_items?on_conflict=library_key_hash,source_url",{
+    method:"POST",
+    headers:{Prefer:"resolution=ignore-duplicates,return=representation"},
+    body:JSON.stringify({
+      library_key_hash:keyHash,
+      source_url:result.source_url,
+      title:result.title,
+      platform:result.platform||"",
+      uploader:result.uploader||"",
+      source_page_name:result.source_page_name||result.uploader||"",
+      source_page_url:result.source_page_url||"",
+      thumbnail_url:result.thumbnail_url||"",
+      recipe_group:result.recipe_group||"Egyéb",
+      ingredient_tags:result.ingredient_tags||[],
+      content_tags:result.content_tags||[],
+      language_detected:result.language_detected||"",
+      hungarian_summary:result.hungarian_summary||"",
+      original_transcript:result.original_transcript||"",
+      hungarian_translation:result.hungarian_translation||"",
+      ingredients:result.ingredients||[],
+      method_steps:result.method_steps||[],
+      techniques:result.techniques||[],
+      plating:result.plating||[],
+      equipment:result.equipment||[],
+      chef_tips:result.chef_tips||[],
+      competition_ideas:result.competition_ideas||[],
+      tags:result.tags||[],
+      raw_result:result,
+      updated_at:new Date().toISOString()
+    })
+  }) as LibraryItem[]|null;
+  return rows?.[0]||null;
+}
+
 export async function listLibraryItems(): Promise<LibraryItem[]> {
   const result:LibraryItem[]=[];
   const PAGE_SIZE=500;
