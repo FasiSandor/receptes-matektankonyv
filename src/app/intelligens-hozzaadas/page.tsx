@@ -111,7 +111,7 @@ export default function IntelligentAdd() {
           if(!response.ok)throw Error(data.error||"A feldolgozás sikertelen.");
           results.push({...emptyBatch(url),title:String(data.title||""),description:String(data.description||""),ingredients:Array.isArray(data.ingredients)?data.ingredients:[],steps:Array.isArray(data.steps)&&data.steps.length?data.steps:Array.isArray(data.paragraphs)?data.paragraphs:[],kind:data.kind==="recipe"?"recipe":"article",selected:true,author:String(data.author||""),recipeYield:String(data.recipeYield||""),prepTime:displayDuration(String(data.prepTime||"")),cookTime:displayDuration(String(data.cookTime||"")),image:String(data.image||""),category:String(data.category||""),cuisine:String(data.cuisine||""),calories:String(data.calories||""),keywords:Array.isArray(data.keywords)?data.keywords:[]});
         }catch(e){results.push({...emptyBatch(url),error:e instanceof Error?e.message:"Hiba",errorPhase:"analyze"});}
-        setBatchResults(old=>retryOnly?old.map(x=>results.find(y=>y.url===x.url)?{...x,...results.find(y=>y.url===x.url),saved:false}:x):[...results]);setBatchProgress(results.length);
+        setBatchResults(old=>retryOnly?old.map(x=>{const updated=results.find(y=>y.url===x.url);return updated?{...x,...updated,saved:false}:x;}):[...results]);setBatchProgress(results.length);
       }
     }finally{setBatchBusy(false);setBatchMode(null);setBatchMessage(batchAbort.current?"A feldolgozás megszakítva. Az elkészült előnézetek megmaradtak.":"Feldolgozás kész. Ellenőrizd a találatokat mentés előtt.");}
   }
