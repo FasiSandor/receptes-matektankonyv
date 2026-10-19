@@ -54,6 +54,15 @@ export function parseLibraryBackup(raw:string):LibraryBackup {
     if(!["https:","http:"].includes(parsed.protocol)||parsed.username||parsed.password)throw Error("Nem támogatott forráslink a mentésben.");
     if(item.result.source_url!==url||typeof item.result.title!=="string"||!item.result.title.trim())throw Error("Hiányzó vagy eltérő receptadat a mentésben.");
     if(!["saved","to_try","tested"].includes(item.status))throw Error("Ismeretlen mentési állapot.");
+    if(typeof item.favorite!=="boolean"||typeof item.for_competition!=="boolean")throw Error("Hibás kedvenc vagy versenyjelölés.");
+    if(typeof item.note!=="string"||item.note.length>100000)throw Error("Hibás megjegyzés.");
+    if(!Array.isArray(item.tags)||item.tags.some(tag=>typeof tag!=="string"))throw Error("Hibás címkék.");
+    if(typeof item.result.platform!=="string")throw Error("Hiányzó forrástípus.");
+    for(const field of ["ingredients","method_steps","tags","content_tags","ingredient_tags"] as const){
+      const value=item.result[field];
+      if(value!==undefined&&!Array.isArray(value))throw Error("Hibás receptmező: "+field);
+    }
+
     return item;
   });
   if(obj.item_count!==items.length)throw Error("Eltér a mentés elemszáma.");
