@@ -47,3 +47,14 @@ Ne módosítsuk a meglévő Supabase táblákat, kulcsokat és videókat; ne tö
 - A 2026-10-19-i `c16b2f7` commit Tudaskonyvtar verification ellenőrzése sikeres: TypeScript, Next.js build, import és backup tesztek, 1103 soros lapozási próba, duplikációbiztos beszúrás teszt.
 - A következő commitok további hibás receptmezőket és túlméretes címkéket utasítanak vissza.
 - Éles Supabase adatbázisba nem történt próbaírás; valós RLS és adatmentési teszt külön mérföldkő. Vercel production deploy nincs.
+
+## 2026-10-19 – Aktuális kiadás-előkészítő állapot
+
+- A Gyűjtemény mentése már teljes lapozással olvassa a rekordokat (500-as oldalanként), nem csak az első 500-at. Az export legfeljebb 10 000 elemet és 50 MB-ot enged; nagyobb állományra külön megoldás kell.
+- Az export JSON ellenőrzése a letöltés előtt megtörténik. A visszaállítás előnézetet és megerősítést kér; csak hiányzó rekordokat szúr be, a kedvenc/verseny/státusz/megjegyzés/címke metaadatokkal együtt.
+- Sikertelen elemek külön újrapróbálhatók. Hosszú visszaállítás megszakítható a következő rekord előtt; a feldolgozatlan elemekből folytatható. Az eredmény külön jelzi a hozzáadott, kihagyott, hibás és feldolgozatlan darabszámot.
+- Visszaállítás közben az oldal elhagyására figyelmeztet; a gyűjteménykulcs cseréje blokkolt a mentési műveletek alatt.
+- Az új `tests/library-restore-integration.test.mjs` működési teszt elkülönített, szimulált Supabase REST válaszokkal ellenőrzi a JSON oda-vissza mentést, duplikátummegőrzést, átmeneti hibát, újrapróbálást és a feldolgozatlan elemek folytatását. Nem élő adatbázis-teszt.
+- A `11a2c64` commit Tudaskonyvtar verification futása sikeres volt; az azt követő UI-változásoknál a build sikerült, de egy régi, hárommezős összesítést kereső regressziós teszt elavult. A tesztet a `31db744` commit frissíti; az új ellenőrzés eredményét külön meg kell várni.
+- Továbbra is **kiadást blokkol** a valódi Supabase RLS/jogosultság és elkülönített adatbázisos integrációs próba, a valódi böngészős végponttól végpontig teszt, valamint az API biztonsági auditja. PDF-feldolgozás még nincs kész.
+- A production adatok változatlanok; sem merge, sem Vercel-deploy nem történt.
