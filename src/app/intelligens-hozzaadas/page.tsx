@@ -40,6 +40,7 @@ export default function IntelligentAdd() {
   const [batchMode,setBatchMode]=useState<"analyze"|"save"|null>(null);
   const [batchOnlyNew,setBatchOnlyNew]=useState(true);
   const [batchSkipCount,setBatchSkipCount]=useState(0);
+  const batchOperation=useRef(false);
   const batchAbort=useRef(false);
   useEffect(()=>{
     if(!batchBusy)return;
@@ -80,9 +81,10 @@ export default function IntelligentAdd() {
   }
 
   async function analyzeBatch(retryOnly=false){
-    if(batchBusy)return;
+    if(batchOperation.current)return;
+    batchOperation.current=true;
     const urls=retryOnly?batchResults.filter(x=>!!x.error&&x.errorPhase==="analyze"&&!x.saved).map(x=>x.url):[...new Set(batchUrls.split(/\r?\n/).map(x=>x.trim()).filter(Boolean))];
-    if(urls.length===0||urls.length>15){setBatchMessage("Adj meg 1–15 különálló forráslinket.");return;}
+    if(urls.length===0||urls.length>15){batchOperation.current=false;setBatchMessage("Adj meg 1–15 különálló forráslinket.");return;}
     setDraftDirty(true);setBatchBusy(true);setBatchMode("analyze");batchAbort.current=false;setBatchSkipCount(0);if(!retryOnly)setBatchResults([]);setBatchProgress(0);setBatchMessage("");
     const results:BatchEntry[]=[];
     let existingUrls=new Set<string>();
@@ -91,7 +93,7 @@ export default function IntelligentAdd() {
         const existing=await listLibraryItems();
         existingUrls=new Set(existing.map(x=>x.source_url));
       }catch(e){
-        setBatchBusy(false);setBatchMode(null);
+        setBatchBusy(false);setBatchMode(null);batchOperation.current=false;
         setBatchMessage("A meglévő gyűjtemény ellenőrzése nem sikerült. A biztonságos szűréshez próbáld újra: "+(e instanceof Error?e.message:"hiba"));
         return;
       }
@@ -113,14 +115,14 @@ export default function IntelligentAdd() {
         }catch(e){results.push({...emptyBatch(url),error:e instanceof Error?e.message:"Hiba",errorPhase:"analyze"});}
         setBatchResults(old=>retryOnly?old.map(x=>{const updated=results.find(y=>y.url===x.url);return updated?{...x,...updated,saved:false}:x;}):[...results]);setBatchProgress(results.length);
       }
-    }finally{setBatchBusy(false);setBatchMode(null);setBatchMessage(batchAbort.current?"A feldolgozás megszakítva. Az elkészült előnézetek megmaradtak.":"Feldolgozás kész. Ellenőrizd a találatokat mentés előtt.");}
+    }finally{batchOperation.current=false;setBatchBusy(false);setBatchMode(null);setBatchMessage(batchAbort.current?"A feldolgozás megszakítva. Az elkészült előnézetek megmaradtak.":"Feldolgozás kész. Ellenőrizd a találatokat mentés előtt.");}
   }
   async function saveBatch(){
-    if(batchBusy)return;
+    if(batchOperation.current)return;
     const chosen=batchResults.filter(x=>x.selected&&!x.error&&!x.saved&&x.title.trim());
     if(!chosen.length){setBatchMessage("Nincs mentésre kijelölt, érvényes elem.");return;}
     if(!window.confirm(chosen.length+" kijelölt forrást mentünk a gyűjteménybe. Folytatod?"))return;
-    setDraftDirty(true);setBatchBusy(true);setBatchMode("save");batchAbort.current=false;setBatchProgress(0);
+    batchOperation.current=true;setDraftDirty(true);setBatchBusy(true);setBatchMode("save");batchAbort.current=false;setBatchProgress(0);
     let savedCount=0;let failedCount=0;
     try{
       for(const entry of chosen){
@@ -134,7 +136,7 @@ export default function IntelligentAdd() {
         }catch(e){failedCount++;setBatchResults(old=>old.map(x=>x.url===entry.url?{...x,error:e instanceof Error?e.message:"Mentési hiba",errorPhase:"save",selected:true}:x));}
         setBatchProgress(savedCount+failedCount);
       }
-    }finally{setBatchBusy(false);setBatchMode(null);setBatchMessage(savedCount+" új recept mentve, "+failedCount+" kihagyott vagy sikertelen."+(batchAbort.current?" Megszakítva; a nem mentett elemek kijelölve maradtak.":""));}
+    }finally{batchOperation.current=false;setBatchBusy(false);setBatchMode(null);setBatchMessage(savedCount+" új recept mentve, "+failedCount+" kihagyott vagy sikertelen."+(batchAbort.current?" Megszakítva; a nem mentett elemek kijelölve maradtak.":""));}
   }
   const currentUrl=useRef("");
   const requestId=useRef(0);
