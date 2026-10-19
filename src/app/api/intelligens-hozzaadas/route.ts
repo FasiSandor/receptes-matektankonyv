@@ -47,7 +47,7 @@ function extract(html:string,url:string){
  const author=typeof authorValue==="string"?clean(authorValue):Array.isArray(authorValue)?authorValue.map(a=>typeof a==="object"&&a?str((a as Record<string,unknown>).name):"").filter(Boolean).join(", "):authorValue&&typeof authorValue==="object"?str((authorValue as Record<string,unknown>).name):"";
  const yieldValue=r?.recipeYield;
  const yieldText=Array.isArray(yieldValue)?yieldValue.map(str).filter(Boolean).join(", "):typeof yieldValue==="number"?String(yieldValue):str(yieldValue);
- const time=(v:unknown)=>typeof v==="string"&&/^P(?:\\d+D)?(?:T(?:\\d+H)?(?:\\d+M)?(?:\\d+S)?)?$/i.test(v)?v:"";
+ const time=(v:unknown)=>typeof v==="string"&&/^P(?=\\d|T\\d)(?:\\d+D)?(?:T(?:\\d+H)?(?:\\d+M)?(?:\\d+S)?)?$/i.test(v)?v:"";
  const imageValue=r?.image;
  const imageRaw=typeof imageValue==="string"?imageValue:Array.isArray(imageValue)?imageValue.find(v=>typeof v==="string")||"":imageValue&&typeof imageValue==="object"?str((imageValue as Record<string,unknown>).url):"";
  const imageCandidate=imageRaw||metaValue("og:image")||metaValue("twitter:image");
