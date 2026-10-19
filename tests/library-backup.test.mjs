@@ -94,3 +94,8 @@ test("backup rejects malformed extended recipe fields and ingredient details",()
  empty.items[0].result.ingredients=[{name:"   "}];
  assert.throws(()=>parseLibraryBackup(JSON.stringify(empty)));
 });
+
+test("export refuses more than 10000 items instead of creating an unrestorable file",()=>{
+ const many=Array.from({length:10001},(_,i)=>({...item,id:String(i),source_url:"https://example.com/"+i}));
+ assert.throws(()=>createLibraryBackup(many),/10000/);
+});
