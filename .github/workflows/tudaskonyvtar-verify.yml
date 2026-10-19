@@ -1,5 +1,8 @@
 name: Tudaskonyvtar verification
 on:
+  pull_request:
+    branches:
+      - main
   push:
     branches:
       - work/tudaskonyvtar-integracio-20261019
