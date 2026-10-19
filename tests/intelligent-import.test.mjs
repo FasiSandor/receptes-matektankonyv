@@ -63,7 +63,7 @@ test("backup export validates its own JSON before offering download",()=>{
 
 test("restore results persist in an accessible summary with individual error details",()=>{
  const page=readFileSync(new URL("../src/app/mota-import/gyujtemeny/page.tsx",import.meta.url),"utf8");
- assert.match(page,/setRestoreSummary\(\{added,skipped,failed:failed\.length\}\)/);
+ assert.match(page,/setRestoreSummary\(\{added,skipped,failed:failed\.length,pending:stopped\?failedEntries\.length-failed\.length:0\}\)/);
  assert.match(page,/setRestoreErrors\(failed\)/);
  assert.match(page,/aria-label="Visszaállítás eredménye"/);
  assert.match(page,/<details><summary>Hibás elemek részletei/);
