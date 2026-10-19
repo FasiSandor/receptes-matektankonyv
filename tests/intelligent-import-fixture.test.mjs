@@ -34,3 +34,13 @@ test("Article fallback uses title and main content",()=>{
 });
 
 test('meta description fallback',()=>{ const r=extract('<title>Article</title><meta name="description" content="Cooking summary">','https://example.com'); assert.equal(r.description,'Cooking summary'); });
+
+test("article metadata works with reversed attributes and single quotes",()=>{
+ const html="<html><head><title>Test</title><meta content='Recept és főzési technológia' name='description'></head></html>";
+ const result=extract(html,"https://example.com/article");
+ assert.equal(result.description,"Recept és főzési technológia");
+});
+test("OpenGraph description is extracted when standard metadata is missing",()=>{
+ const html='<title>Test</title><meta content="Konyhatechnológiai cikk" property="og:description">';
+ assert.equal(extract(html,"https://example.com/article").description,"Konyhatechnológiai cikk");
+});
