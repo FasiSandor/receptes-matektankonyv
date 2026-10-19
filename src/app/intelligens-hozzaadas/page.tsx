@@ -14,6 +14,10 @@ export default function IntelligentAdd() {
   const [prepTime,setPrepTime]=useState("");
   const [cookTime,setCookTime]=useState("");
   const [image,setImage]=useState("");
+  const [category,setCategory]=useState("");
+  const [cuisine,setCuisine]=useState("");
+  const [calories,setCalories]=useState("");
+  const [keywords,setKeywords]=useState("");
   const [sourceKind,setSourceKind]=useState<"recipe"|"article"|"manual">("manual");
   const [error,setError]=useState("");
   const [busy,setBusy]=useState(false);
@@ -25,7 +29,7 @@ export default function IntelligentAdd() {
     currentUrl.current=next;
     requestId.current+=1;
     setUrl(next);
-    setTitle("");setSummary("");setIngredients("");setSteps("");setAuthor("");setYieldText("");setPrepTime("");setCookTime("");setImage("");setSourceKind("manual");
+    setTitle("");setSummary("");setIngredients("");setSteps("");setAuthor("");setYieldText("");setPrepTime("");setCookTime("");setImage("");setSourceKind("manual");setCategory("");setCuisine("");setCalories("");setKeywords("");
     setSaved(false);setError("");setBusy(false);
   }
   const field:React.CSSProperties={width:"100%",padding:12,border:"1px solid #334155",borderRadius:10,background:"#111827",color:"#f8fafc",font:"inherit"};
@@ -39,6 +43,7 @@ export default function IntelligentAdd() {
       if(id!==requestId.current||source!==currentUrl.current.trim())return;
       if(!response.ok)throw Error(result.error||"Nem sikerült feldolgozni a weboldalt.");
       setTitle(result.title||"");setSummary(result.description||(result.paragraphs||[]).slice(0,3).join("\n"));
+      setCategory(result.category||"");setCuisine(result.cuisine||"");setCalories(result.calories||"");setKeywords((result.keywords||[]).join(", "));
       setSourceKind(result.kind==="recipe"?"recipe":"article");
       setAuthor(result.author||"");setYieldText(result.recipeYield||"");setPrepTime(result.prepTime||"");setCookTime(result.cookTime||"");setImage(result.image||"");
       setIngredients((result.ingredients||[]).join("\n"));
@@ -55,7 +60,7 @@ export default function IntelligentAdd() {
     setBusy(true);
     const saveId=requestId.current;
     try {
-      const result:MotaResult={source_url:source.toString(),title:title.trim(),platform:"weboldal",hungarian_summary:[summary.trim(),author.trim()?"Szerző: "+author.trim():"",yieldText.trim()?"Adag: "+yieldText.trim():"",prepTime.trim()?"Előkészítési idő: "+prepTime.trim():"",cookTime.trim()?"Sütési/főzési idő: "+cookTime.trim():""].filter(Boolean).join("\n"),thumbnail_url:image.trim(),recipe_group:sourceKind==="recipe"?"Webes receptek":sourceKind==="article"?"Szakmai cikkek":ingredients.trim()?"Webes receptek":"Szakmai cikkek",ingredients:ingredients.split("\n").map(line=>{const original=line.trim();const match=original.match(/^([\d]+(?:[.,][\d]+)?|[½¼¾])\s*(kg|dkg|g|mg|l|dl|cl|ml|db|csomag|cs|evőkanál|teáskanál|ek|tk|fej|gerezd|szál|szelet|csipet|pohár|bögre)(?=\s|$)\s*[-–:]?\s*(.*)$/i);return match&&match[3]?{name:match[3].trim(),amount:`${match[1]} ${match[2]}`,note:original}:{name:original,note:original};}).filter(x=>x.name),method_steps:steps.split("\n").map(s=>s.trim()).filter(Boolean),content_tags:["weboldal"]};
+      const result:MotaResult={source_url:source.toString(),title:title.trim(),platform:"weboldal",hungarian_summary:[summary.trim(),author.trim()?"Szerző: "+author.trim():"",yieldText.trim()?"Adag: "+yieldText.trim():"",prepTime.trim()?"Előkészítési idő: "+prepTime.trim():"",cookTime.trim()?"Sütési/főzési idő: "+cookTime.trim():"",calories.trim()?"Kalória (forrás szerint): "+calories.trim():""].filter(Boolean).join("\n"),thumbnail_url:image.trim(),recipe_group:category.trim()|| (sourceKind==="recipe"?"Webes receptek":sourceKind==="article"?"Szakmai cikkek":ingredients.trim()?"Webes receptek":"Szakmai cikkek"),ingredient_tags:keywords.split(",").map(x=>x.trim()).filter(Boolean).slice(0,20),content_tags:[...new Set(["weboldal",...(cuisine.trim()?[cuisine.trim()]:[])])].slice(0,20),ingredients:ingredients.split("\n").map(line=>{const original=line.trim();const match=original.match(/^([\d]+(?:[.,][\d]+)?|[½¼¾])\s*(kg|dkg|g|mg|l|dl|cl|ml|db|csomag|cs|evőkanál|teáskanál|ek|tk|fej|gerezd|szál|szelet|csipet|pohár|bögre)(?=\s|$)\s*[-–:]?\s*(.*)$/i);return match&&match[3]?{name:match[3].trim(),amount:`${match[1]} ${match[2]}`,note:original}:{name:original,note:original};}).filter(x=>x.name),method_steps:steps.split("\n").map(s=>s.trim()).filter(Boolean)};
       await saveLibraryResult(result);if(saveId===requestId.current)setSaved(true);
     }catch(e){if(saveId===requestId.current)setError(e instanceof Error?e.message:"Nem sikerült a mentés.");}
     finally{if(saveId===requestId.current)setBusy(false);}
@@ -74,6 +79,10 @@ export default function IntelligentAdd() {
       <label htmlFor="prepTime">Előkészítési idő (ISO 8601 vagy kézi szöveg)</label><input id="prepTime" style={field} value={prepTime} onChange={e=>setPrepTime(e.target.value)}/>
       <label htmlFor="cookTime">Elkészítési idő (ISO 8601 vagy kézi szöveg)</label><input id="cookTime" style={field} value={cookTime} onChange={e=>setCookTime(e.target.value)}/>
       <label htmlFor="imageUrl">Receptkép webcíme (szerkeszthető)</label><input id="imageUrl" style={field} type="url" value={image} onChange={e=>setImage(e.target.value)}/>
+      <label htmlFor="category">Receptkategória</label><input id="category" style={field} value={category} onChange={e=>setCategory(e.target.value)}/>
+      <label htmlFor="cuisine">Konyha / nemzetiség</label><input id="cuisine" style={field} value={cuisine} onChange={e=>setCuisine(e.target.value)}/>
+      <label htmlFor="calories">Kalória a forrás szerint</label><input id="calories" style={field} value={calories} onChange={e=>setCalories(e.target.value)}/>
+      <label htmlFor="keywords">Kulcsszavak (vesszővel elválasztva)</label><input id="keywords" style={field} value={keywords} onChange={e=>setKeywords(e.target.value)}/>
       <label htmlFor="ingredients">Hozzávalók (soronként)</label><textarea id="ingredients" style={field} rows={5} value={ingredients} onChange={e=>setIngredients(e.target.value)}/>
       <label htmlFor="steps">Elkészítés vagy cikk tartalma (soronként)</label><textarea id="steps" style={field} rows={8} value={steps} onChange={e=>setSteps(e.target.value)}/>
       {error&&<p role="alert" style={{color:"#fca5a5"}}>{error}</p>}
