@@ -31,12 +31,13 @@ function extract(html:string,url:string){
  for(const m of html.matchAll(/<script\b(?=[^>]*type\s*=\s*["']application\/ld\+json["'])[^>]*>([\s\S]*?)<\/script>/gi)){try{walk(JSON.parse(m[1]));if(recipe)break;}catch{/* skip invalid JSON-LD */}}
  const r=recipe as Record<string,unknown>|null;
  const str=(v:unknown)=>typeof v==="string"?clean(v):"";
+ const ingredient=(v:unknown):string=>typeof v==="string"?clean(v):v&&typeof v==="object"?str((v as Record<string,unknown>).name):"";
  const steps=(v:unknown):string[]=>Array.isArray(v)?v.flatMap(steps):typeof v==="string"?[clean(v)]:v&&typeof v==="object"?steps((v as Record<string,unknown>).itemListElement||(v as Record<string,unknown>).text||(v as Record<string,unknown>).name):[];
  const title=str(r?.name)||clean(html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]||"")||"Névtelen oldal";
  const body=html.replace(/<(script|style|nav|footer|header|aside|form|iframe|noscript|svg)\b[^>]*>[\s\S]*?<\/\1>/gi," ");
  const main=body.match(/<(article|main)\b[^>]*>([\s\S]*?)<\/\1>/i)?.[2]||body;
  const paragraphs=[...main.matchAll(/<(p|h[1-6]|li)\b[^>]*>([\s\S]*?)<\/\1>/gi)].map(m=>clean(m[2])).filter(s=>s.length>=25&&!/^(cookie|privacy|hirdetés|feliratkozás|subscribe)/i.test(s)).slice(0,120);
- return {kind:recipe?"recipe":"article",source_url:url,title:title.slice(0,300),description:str(r?.description),ingredients:Array.isArray(r?.recipeIngredient)?r.recipeIngredient.map(str).filter(Boolean):[],steps:steps(r?.recipeInstructions),paragraphs};
+ return {kind:recipe?"recipe":"article",source_url:url,title:title.slice(0,300),description:str(r?.description),ingredients:Array.isArray(r?.recipeIngredient)?r.recipeIngredient.map(ingredient).filter(Boolean):[],steps:steps(r?.recipeInstructions),paragraphs};
 }
 async function download(raw:string){
  let current=raw;
