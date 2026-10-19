@@ -68,3 +68,11 @@ test("restore results persist in an accessible summary with individual error det
  assert.match(page,/aria-label="Visszaállítás eredménye"/);
  assert.match(page,/<details><summary>Hibás elemek részletei/);
 });
+
+test("backup inspection ignores stale asynchronous file selections",()=>{
+ const page=readFileSync(new URL("../src/app/mota-import/gyujtemeny/page.tsx",import.meta.url),"utf8");
+ assert.match(page,/const backupInspectionSequence = useRef\(0\)/);
+ assert.match(page,/const inspection=\+\+backupInspectionSequence\.current/);
+ assert.match(page,/if\(inspection!==backupInspectionSequence\.current\)return/);
+ assert.match(page,/backupInspectionSequence\.current\+\+/);
+});
