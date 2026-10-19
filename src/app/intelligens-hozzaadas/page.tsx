@@ -39,7 +39,7 @@ export default function IntelligentAdd() {
   const batchAbort=useRef(false);
   async function analyzeBatch(retryOnly=false){
     if(batchBusy)return;
-    const urls=[...new Set(batchUrls.split(/\\r?\\n/).map(x=>x.trim()).filter(Boolean))];
+    const urls=retryOnly?batchResults.filter(x=>!!x.error&&!x.saved).map(x=>x.url):[...new Set(batchUrls.split(/\\r?\\n/).map(x=>x.trim()).filter(Boolean))];
     if(urls.length===0||urls.length>15){setBatchMessage("Adj meg 1–15 különálló forráslinket.");return;}
     setBatchBusy(true);batchAbort.current=false;if(!retryOnly)setBatchResults([]);setBatchProgress(0);setBatchMessage("");
     const results:BatchEntry[]=[];
