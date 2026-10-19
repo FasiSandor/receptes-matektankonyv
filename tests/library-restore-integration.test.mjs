@@ -114,3 +114,40 @@ test("resume processes only unprocessed records after a simulated stop",async()=
  assert.equal(database.size,8);
  assert.deepEqual(attempted,entries.map(x=>x.source_url));
 });
+
+test("video upload: failed database linking removes only the newly uploaded object",async()=>{
+ const requests=[];
+ const fetch=async(url,init={})=>{
+  requests.push({url:String(url),method:init.method});
+  if(init.method==="POST")return {ok:true,status:200,text:async()=>""};
+  if(init.method==="PATCH")return {ok:false,status:503,text:async()=>"Linking failed"};
+  if(init.method==="DELETE")return {ok:true,status:200,text:async()=>""};
+  throw Error("Unexpected request "+init.method);
+ };
+ const sandbox={exports:{},URL,Date,JSON,TextEncoder,Uint8Array,crypto:webcrypto,window:{},localStorage:{getItem(){return key;}},fetch,Blob};
+ const lib=load("../src/app/mota-import/library.ts",sandbox);
+ const itemId="123e4567-e89b-42d3-a456-426614174000";
+ await assert.rejects(lib.uploadLibraryVideo(itemId,new Blob(["video"],{type:"video/mp4"})),/Linking failed/);
+ assert.deepEqual(requests.map(x=>x.method),["POST","PATCH","DELETE"]);
+ assert.equal(requests[0].url,requests[2].url);
+ assert.match(requests[0].url,/123e4567-e89b-42d3-a456-426614174000-[0-9a-f-]+\\.mp4$/);
+});
+
+test("video upload: successful link verifies returned item and never deletes storage",async()=>{
+ const requests=[];
+ const itemId="123e4567-e89b-42d3-a456-426614174000";
+ const fetch=async(url,init={})=>{
+  requests.push({url:String(url),method:init.method});
+  if(init.method==="POST")return {ok:true,status:200,text:async()=>""};
+  if(init.method==="PATCH"){
+   const body=JSON.parse(init.body);
+   return {ok:true,status:200,text:async()=>JSON.stringify([{id:itemId,video_path:body.video_path}])};
+  }
+  throw Error("Unexpected request "+init.method);
+ };
+ const sandbox={exports:{},URL,Date,JSON,TextEncoder,Uint8Array,crypto:webcrypto,window:{},localStorage:{getItem(){return key;}},fetch,Blob};
+ const lib=load("../src/app/mota-import/library.ts",sandbox);
+ const path=await lib.uploadLibraryVideo(itemId,new Blob(["video"],{type:"video/mp4"}));
+ assert.match(path,/123e4567-e89b-42d3-a456-426614174000-/);
+ assert.deepEqual(requests.map(x=>x.method),["POST","PATCH"]);
+});
