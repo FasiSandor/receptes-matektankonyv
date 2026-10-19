@@ -148,6 +148,7 @@ export default function CollectionPage() {
   const [restoreBusy,setRestoreBusy] = useState(false);
   const [restoreProgress,setRestoreProgress] = useState(0);
   const [backupBusy,setBackupBusy] = useState(false);
+  const [restoreExisting,setRestoreExisting] = useState(0);
 
   async function reload() {
     try {
@@ -334,6 +335,9 @@ export default function CollectionPage() {
     if(file.size>50_000_000){setMessage("A mentés túl nagy.");return;}
     try{
       const parsed=parseLibraryBackup(await file.text());
+      const current=await listLibraryItems();
+      const urls=new Set(current.map(item=>item.source_url));
+      setRestoreExisting(parsed.items.filter(entry=>urls.has(entry.source_url)).length);
       setRestorePreview(parsed);
       setMessage("Mentés ellenőrizve: "+parsed.item_count+" elem. Még semmi nem lett visszaállítva.");
     }catch(error){setMessage(error instanceof Error?error.message:"A mentés nem olvasható.");}
@@ -788,7 +792,7 @@ export default function CollectionPage() {
           <strong>Biztonsági mentés visszaállítása</strong>
           <small>Először ellenőrizzük a JSON fájlt. Az adatok csak a jóváhagyásod után kerülnek a gyűjteménybe. A meglévő rekordok azonos forráslink esetén frissülnek.</small>
           <input type="file" accept=".json,application/json" aria-label="Gyűjtemény biztonsági mentés kiválasztása" onChange={e=>{const file=e.target.files?.[0];if(file)void inspectBackup(file);e.target.value="";}}/>
-          {restorePreview&&<div><p>{restorePreview.item_count} ellenőrzött elem · {restorePreview.exported_at}</p>{restoreBusy&&<p role="status">Visszaállítás: {restoreProgress}/{restorePreview.item_count}</p>}<button type="button" disabled={restoreBusy} onClick={()=>void restoreBackup()}>{restoreBusy?"Visszaállítás folyamatban…":"Jóváhagyás és visszaállítás"}</button><button type="button" disabled={restoreBusy} onClick={()=>setRestorePreview(null)}>Mégse</button></div>}
+          {restorePreview&&<div><p>{restorePreview.item_count} ellenőrzött elem · {restorePreview.exported_at}</p><p>{restoreExisting} meglévő elem frissülhet, {restorePreview.item_count-restoreExisting} új elem kerülhet be.</p>{restoreBusy&&<p role="status">Visszaállítás: {restoreProgress}/{restorePreview.item_count}</p>}<button type="button" disabled={restoreBusy} onClick={()=>void restoreBackup()}>{restoreBusy?"Visszaállítás folyamatban…":"Jóváhagyás és visszaállítás"}</button><button type="button" disabled={restoreBusy} onClick={()=>setRestorePreview(null)}>Mégse</button></div>}
         </div>
       </section>
 
