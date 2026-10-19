@@ -40,3 +40,10 @@ Ne módosítsuk a meglévő Supabase táblákat, kulcsokat és videókat; ne tö
 - A 8452cef commit mindkét GitHub workflow-ja sikeres volt.
 - Korlát: az export jelenleg legfeljebb 500 lekért rekordot tartalmaz, és nem menti a videófájlokat. Supabase élő próba még hátravan.
 - Production deploy nem történt.
+
+## 2026-10-19 – Visszaállítási biztonság és tesztmérföldkő
+- A visszaállítás már csak hiányzó rekordot szúr be: PostgREST `resolution=ignore-duplicates` és egyedi `(library_key_hash,source_url)` kulcs; a meglévő rekordok nem módosulnak.
+- Az import folytatódik egyedi elemhibánál, és összesítést ad a sikeres, kihagyott és sikertelen elemekről.
+- A 2026-10-19-i `c16b2f7` commit Tudaskonyvtar verification ellenőrzése sikeres: TypeScript, Next.js build, import és backup tesztek, 1103 soros lapozási próba, duplikációbiztos beszúrás teszt.
+- A következő commitok további hibás receptmezőket és túlméretes címkéket utasítanak vissza.
+- Éles Supabase adatbázisba nem történt próbaírás; valós RLS és adatmentési teszt külön mérföldkő. Vercel production deploy nincs.
