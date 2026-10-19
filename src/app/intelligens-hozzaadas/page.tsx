@@ -14,6 +14,18 @@ export default function IntelligentAdd() {
   const [saved,setSaved]=useState(false);
   useEffect(()=>{setUrl(new URLSearchParams(window.location.search).get("url")||"")},[]);
   const field:React.CSSProperties={width:"100%",padding:12,border:"1px solid #334155",borderRadius:10,background:"#111827",color:"#f8fafc",font:"inherit"};
+  async function analyze() {
+    setError("");setSaved(false);setBusy(true);
+    try {
+      const response=await fetch("/api/intelligens-hozzaadas",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({url:url.trim()})});
+      const result=await response.json();
+      if(!response.ok)throw Error(result.error||"Nem sikerült feldolgozni a weboldalt.");
+      setTitle(result.title||"");setSummary(result.description||(result.paragraphs||[]).slice(0,3).join("\n"));
+      setIngredients((result.ingredients||[]).join("\n"));
+      setSteps((result.steps?.length?result.steps:result.paragraphs||[]).join("\n"));
+    }catch(e){setError(e instanceof Error?e.message:"Feldolgozási hiba. Kézzel is rögzítheted.");}
+    finally{setBusy(false);}
+  }
   async function save() {
     setError("");setSaved(false);
     let source:URL;
@@ -31,9 +43,9 @@ export default function IntelligentAdd() {
     <header className="kh-brand"><div className="kh-mark">✧</div><div><h1 className="kh-title">Intelligens hozzáadás</h1><p className="kh-sub">WEBOLDAL · RECEPT · CIKK</p></div></header>
     <section className="kh-card" style={{display:"grid",gap:12}}>
       <h2>Forrás rögzítése</h2>
-      <p className="kh-muted">A weboldalak automatikus kinyerése még fejlesztés alatt áll. Addig a forráslinket és a tartalmat kézzel, biztonságosan elmentheted a meglévő gyűjteményedbe.</p>
+      <p className="kh-muted">Nyilvános recept- és cikkoldalakból automatikusan kinyerjük az elérhető tartalmat. Mentés előtt ellenőrizd és javítsd az adatokat. Egyes oldalak tiltják az automatizált hozzáférést; ilyenkor kézzel is rögzítheted.</p>
       <label htmlFor="source">Eredeti webcím</label><input id="source" style={field} type="url" value={url} onChange={e=>setUrl(e.target.value)} placeholder="https://..."/>
-      <label htmlFor="title">Cím</label><input id="title" style={field} value={title} onChange={e=>setTitle(e.target.value)}/>
+      <button className="kh-btn secondary" disabled={busy} onClick={analyze}>{busy?"Feldolgozás…":"Weboldal feldolgozása"}</button><label htmlFor="title">Cím</label><input id="title" style={field} value={title} onChange={e=>setTitle(e.target.value)}/>
       <label htmlFor="summary">Összefoglaló</label><textarea id="summary" style={field} rows={3} value={summary} onChange={e=>setSummary(e.target.value)}/>
       <label htmlFor="ingredients">Hozzávalók (soronként)</label><textarea id="ingredients" style={field} rows={5} value={ingredients} onChange={e=>setIngredients(e.target.value)}/>
       <label htmlFor="steps">Elkészítés vagy cikk tartalma (soronként)</label><textarea id="steps" style={field} rows={8} value={steps} onChange={e=>setSteps(e.target.value)}/>
