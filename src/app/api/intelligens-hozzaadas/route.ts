@@ -45,13 +45,13 @@ async function download(raw:string){
   try{
    const response=await fetchPinned(u.toString(),{dispatcher:agent,method:"GET",maxRedirections:0,headers:{"accept":"text/html,application/xhtml+xml","user-agent":"TudaskonyvtarImporter/1.0"},headersTimeout:10000,bodyTimeout:10000});
    const status=response.statusCode;
-   if(status>=300&&status<400){const location=response.headers.location;if(typeof location!=="string")throw Error("Hibás átirányítás.");await response.body.dump();current=new URL(location,u).toString();continue;}
-   if(status!==200)throw Error("A forrásoldal nem érhető el (HTTP "+status+").");
+   if(status>=300&&status<400){const location=response.headers.location;if(typeof location!=="string")throw Error("Hibás átirányítás.");response.body.destroy();current=new URL(location,u).toString();continue;}
+   if(status!==200){response.body.destroy();throw Error("A forrásoldal nem érhető el (HTTP "+status+").");}
    const type=String(response.headers["content-type"]||"").toLowerCase();
-   if(!type.includes("text/html")&&!type.includes("application/xhtml+xml"))throw Error("Ez a link nem HTML-oldal. PDF-feldolgozás később.");
-   const len=Number(response.headers["content-length"]||0);if(len>MAX_BYTES)throw Error("A weboldal túl nagy.");
+   if(!type.includes("text/html")&&!type.includes("application/xhtml+xml")){response.body.destroy();throw Error("Ez a link nem HTML-oldal. PDF-feldolgozás később.");}
+   const len=Number(response.headers["content-length"]||0);if(len>MAX_BYTES){response.body.destroy();throw Error("A weboldal túl nagy.");}
    const parts:Buffer[]=[];let size=0;
-   for await(const part of response.body){const chunk=Buffer.from(part);size+=chunk.length;if(size>MAX_BYTES)throw Error("A weboldal túl nagy.");parts.push(chunk);}
+   for await(const part of response.body){const chunk=Buffer.from(part);size+=chunk.length;if(size>MAX_BYTES){response.body.destroy();throw Error("A weboldal túl nagy.");}parts.push(chunk);}
    return extract(Buffer.concat(parts).toString("utf8"),u.toString());
   }finally{await agent.close();}
  }
