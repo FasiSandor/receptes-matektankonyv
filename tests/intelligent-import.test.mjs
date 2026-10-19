@@ -37,3 +37,5 @@ test('ingredient unit list supports cooking measures and abbreviations',()=>{ fo
 test('unparsed ingredients also retain their exact original wording',()=>{ assert.match(ui,/\{name:original,note:original\}/); });
 
 test('common fraction characters are recognized as ingredient quantities',()=>{ assert.ok(ui.includes('½¼¾')); });
+
+test('accented Hungarian unit names do not depend on ASCII word boundaries',()=>{ assert.ok(ui.includes('(?=\\s|$)')); assert.ok(ui.includes('evőkanál')); assert.ok(ui.includes('bögre')); });
