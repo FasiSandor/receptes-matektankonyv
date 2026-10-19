@@ -46,7 +46,7 @@ export default function IntelligentAdd() {
     if(!title.trim()){setError("A cím megadása kötelező.");return;}
     setBusy(true);
     try {
-      const result:MotaResult={source_url:source.toString(),title:title.trim(),platform:"weboldal",hungarian_summary:summary.trim(),recipe_group:ingredients.trim()?"Webes receptek":"Szakmai cikkek",ingredients:ingredients.split("\n").map(line=>{const original=line.trim();const match=original.match(/^([\d]+(?:[.,][\d]+)?|[½¼¾])\s*(kg|dkg|g|mg|l|dl|cl|ml|db|csomag|cs|evőkanál|teáskanál|ek|tk|fej|gerezd|szál|szelet|csipet|pohár|bögre)\b\s*(.*)$/i);return match&&match[3]?{name:match[3].trim(),amount:`${match[1]} ${match[2]}`,note:original}:{name:original,note:original};}).filter(x=>x.name),method_steps:steps.split("\n").map(s=>s.trim()).filter(Boolean),content_tags:["weboldal"]};
+      const result:MotaResult={source_url:source.toString(),title:title.trim(),platform:"weboldal",hungarian_summary:summary.trim(),recipe_group:ingredients.trim()?"Webes receptek":"Szakmai cikkek",ingredients:ingredients.split("\n").map(line=>{const original=line.trim();const match=original.match(/^([\d]+(?:[.,][\d]+)?|[½¼¾])\s*(kg|dkg|g|mg|l|dl|cl|ml|db|csomag|cs|evőkanál|teáskanál|ek|tk|fej|gerezd|szál|szelet|csipet|pohár|bögre)(?=\s|$)\s*(.*)$/i);return match&&match[3]?{name:match[3].trim(),amount:`${match[1]} ${match[2]}`,note:original}:{name:original,note:original};}).filter(x=>x.name),method_steps:steps.split("\n").map(s=>s.trim()).filter(Boolean),content_tags:["weboldal"]};
       await saveLibraryResult(result);setSaved(true);
     }catch(e){setError(e instanceof Error?e.message:"Nem sikerült a mentés.");}
     finally{setBusy(false);}
