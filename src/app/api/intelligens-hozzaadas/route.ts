@@ -6,7 +6,6 @@ import { Agent, request as fetchPinned } from "undici";
 export const runtime = "nodejs";
 export const maxDuration = 30;
 const MAX_BYTES = 2_000_000;
-const MAX_PARAGRAPHS = 120;
 const recent = new Map<string,{count:number,until:number}>();
 function publicIPv4(ip:string) {
  if(net.isIP(ip)!==4)return false;
@@ -38,7 +37,7 @@ function extract(html:string,url:string){
  const metaDescription=html.match(/<meta[^>]+name="description"[^>]+content="([^"]*)"/i)?.[1]||html.match(/<meta[^>]+property="og:description"[^>]+content="([^"]*)"/i)?.[1]||"";
  const body=html.replace(/<(script|style|nav|footer|header|aside|form|iframe|noscript|svg)\b[^>]*>[\s\S]*?<\/\1>/gi," ");
  const main=body.match(/<(article|main)\b[^>]*>([\s\S]*?)<\/\1>/i)?.[2]||body;
- const paragraphs=[...main.matchAll(/<(p|h[1-6]|li)\b[^>]*>([\s\S]*?)<\/\1>/gi)].map(m=>clean(m[2])).filter(s=>s.length>=25&&!/^(cookie|privacy|hirdetés|feliratkozás|subscribe)/i.test(s)).slice(0,MAX_PARAGRAPHS);
+ const paragraphs=[...main.matchAll(/<(p|h[1-6]|li)\b[^>]*>([\s\S]*?)<\/\1>/gi)].map(m=>clean(m[2])).filter(s=>s.length>=25&&!/^(cookie|privacy|hirdetés|feliratkozás|subscribe)/i.test(s)).slice(0,120);
  return {kind:recipe?"recipe":"article",source_url:url,title:title.slice(0,300),description:str(r?.description)||clean(metaDescription),ingredients:Array.isArray(r?.recipeIngredient)?r.recipeIngredient.map(ingredient).filter(Boolean):[],steps:steps(r?.recipeInstructions),paragraphs};
 }
 async function download(raw:string){
