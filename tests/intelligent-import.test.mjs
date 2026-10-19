@@ -174,3 +174,18 @@ test("single URL import preserves previously saved library entries",()=>{
 });
 
 test("untrusted forwarding headers cannot create fresh rate limit identities",()=>{assert.doesNotMatch(api,/req\.headers\.get\("x-forwarded-for"\)/);assert.match(api,/const key="shared"/);});
+
+test("IPv4 allowlist rejects private, reserved and documentation ranges",async()=>{
+ const {runInNewContext}=await import("node:vm");
+ const net=await import("node:net");
+ const source=api.match(/function publicIPv4\(ip:string\) \{[\s\S]*?\n\}/)?.[0];
+ assert.ok(source,"publicIPv4 helper exists");
+ const js=source.replace("ip:string","ip");
+ const check=runInNewContext(js+"; publicIPv4", {net});
+ for(const ip of ["127.0.0.1","10.0.0.1","172.16.1.2","192.168.1.1","169.254.1.1","100.64.0.1","192.0.0.8","198.51.100.1","203.0.113.7","240.1.2.3","255.255.255.255","::1"]){
+  assert.equal(check(ip),false,"must reject "+ip);
+ }
+ for(const ip of ["8.8.8.8","1.1.1.1","9.9.9.9"]){
+  assert.equal(check(ip),true,"must permit "+ip);
+ }
+});
